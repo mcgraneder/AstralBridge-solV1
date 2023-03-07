@@ -15,15 +15,19 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract AstralERC20Logic is ERC20, Ownable {
     using SafeMath for uint256;
 
+    uint8 internal setDecimals;
     uint256 public constant _rateScale = 1e18;
     uint256 internal _rate;
 
     event LogRateChanged(uint256 indexed _rate);
 
-    constructor(string memory _name, string memory _symbol) public ERC20(_name, _symbol){}
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) public ERC20(_name, _symbol){
+        if(_decimals != 0) setDecimals = _decimals;
+        else setDecimals = 18;
+    }
 
     function decimals() public view override returns (uint8) {
-        return 18;
+        return setDecimals;
     }
     /// @notice mint can only be called by the tokens' associated Gateway
     /// contract. See Gateway's mint function instead.
