@@ -1,13 +1,6 @@
-# Sample Hardhat Project
+# Astral Brridge Contracts Post Ren SDK
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+#this repo has only been created so i can develop the bridge contracts external to the main astral backend. Since my commits are tied to an api server, developing contracts is more cumbersome so i have abstracted the bridge to this repo
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+## to view core astral backend visit
+https://github.com/mcgraneder/astral-sol
