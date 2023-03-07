@@ -1,6 +1,6 @@
 pragma solidity >= 0.8.9;
 
-import {LinkedList} from "./LinkedList.sol";
+import {LinkedList} from "../utils/LinkedList.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 
