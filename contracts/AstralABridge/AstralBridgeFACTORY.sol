@@ -9,8 +9,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {LinkedList} from "../utils/LinkedList.sol";
 import {BridgeBase} from "./BridgeBaseAdapter.sol";
 import {IBaseBridge} from "../interfaces/AstralBridge/IBaseBridge.sol";
+import "hardhat/console.sol";
 
-contract RenAssetFactory {
+contract AstralBridgeFactory is Ownable {
 
     uint8 numAstralAssets = 0;
     LinkedList.List private AstralAssetAddresses;
@@ -18,12 +19,12 @@ contract RenAssetFactory {
 
     event AstralAssetDeployed(
         uint256 chainId,
-        string asset,
         string name,
         string symbol,
         uint8 decimals,
         uint256 timestamp
     );
+
 
     event AstralAssetBridgeDeployed(
         uint256 chainId,
@@ -40,7 +41,22 @@ contract RenAssetFactory {
     //    //will add sig and access control params later
     // }
 
-    function _deployRenAsset(
+    function deployAssetAndBridge(
+        string calldata asset, 
+        string calldata name, 
+        string calldata symbol,
+         uint8 decimals 
+    ) public onlyOwner {
+        //check if asset exists
+        address a = symbolToAstralAsset[symbol];
+        console.log(a);
+
+        address token = address(_deployAstralAsset(block.chainid, asset, name, symbol, decimals));
+        _deployAssetBridge(asset, symbol, address(this), token, block.chainid);
+        numAstralAssets++;
+    }
+
+    function _deployAstralAsset(
         uint256 chainId,
         string calldata asset,
         string calldata name,
@@ -59,7 +75,7 @@ contract RenAssetFactory {
         symbolToAstralAsset[symbol] = address(astralAsset);
         LinkedList.append(AstralAssetAddresses, address(astralAsset));
 
-        emit AstralAssetDeployed(chainId, asset, name, symbol, decimals, block.timestamp);
+        emit AstralAssetDeployed(chainId, name, symbol, decimals, block.timestamp);
 
         return IERC20(astralAsset);
     }
@@ -87,6 +103,19 @@ contract RenAssetFactory {
         emit AstralAssetBridgeDeployed(chainId, asset, address(assetBridge), block.timestamp);
 
         return IBaseBridge(address(assetBridge));
+    }
+
+    function getAllAstralAndBridgesAssets() public view returns (address[] memory, address[] memory) {
+        address firstAssetAddress = LinkedList.begin(AstralAssetAddresses);
+        address firstBridgeAddress = LinkedList.begin(AstralAssetBridgeAddresses);
+
+        address[] memory allAssets = LinkedList.elements(AstralAssetAddresses, firstAssetAddress, numAstralAssets);
+        address[] memory allBridges = LinkedList.elements(AstralAssetBridgeAddresses, firstBridgeAddress, numAstralAssets);
+        return (allAssets, allBridges);
+    }
+
+    function getNumAssets() public view returns(uint8) {
+        return numAstralAssets;
     }
 
 }
