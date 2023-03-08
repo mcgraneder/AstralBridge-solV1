@@ -18,12 +18,23 @@ contract AstralERC20Logic is ERC20, Ownable {
     uint8 internal setDecimals;
     uint256 public constant _rateScale = 1e18;
     uint256 internal _rate;
+    uint256 public chainId;
 
     event LogRateChanged(uint256 indexed _rate);
 
-    constructor(string memory _name, string memory _symbol, uint8 _decimals) public ERC20(_name, _symbol){
+    constructor(
+        string memory _name, 
+        string memory _symbol, 
+        uint8 _decimals, 
+        uint256 _chainId
+    ) public ERC20(_name, _symbol){
+        chainId = _chainId;
         if(_decimals != 0) setDecimals = _decimals;
         else setDecimals = 18;
+    }
+
+    function chain() public view returns (uint256) {
+        return chainId;
     }
 
     function decimals() public view override returns (uint8) {

@@ -3,75 +3,90 @@
 // solhint-disable-next-line
 pragma solidity ^0.8.0;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {AstralERC20Logic} from "./AstralERC20Asset/AstralERC20.sol";
 import {BridgeBase} from "./BridgeBaseAdapter.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
+import {LinkedList} from "../utils/LinkedList.sol";
+import {BridgeBase} from "./BridgeBaseAdapter.sol";
+import {IBaseBridge} from "../interfaces/AstralBridge/IBaseBridge.sol";
 
 contract RenAssetFactory {
-    event AstralAssetProxyDeployed(
+
+    uint8 numAstralAssets = 0;
+    LinkedList.List private AstralAssetAddresses;
+    LinkedList.List private AstralAssetBridgeAddresses;
+
+    event AstralAssetDeployed(
         uint256 chainId,
         string asset,
         string name,
         string symbol,
         uint8 decimals,
-        string version
+        uint256 timestamp
     );
-    event MintGatewayProxyDeployed(string asset, address signatureVerifier, address token, string version);
-    event LockGatewayProxyDeployed(string asset, address signatureVerifier, address token, string version);
 
-    constructor() public {
+    event AstralAssetBridgeDeployed(
+        uint256 chainId,
+        string asset,
+        address bridge,
+        uint256 timestamp
+    );
 
-    }
+    mapping(string => address) symbolToAstralAsset;
+    mapping(address => address) addressToAstralBridge;
+    mapping(string => address) symbolToAstralBridge;
+
+    // constructor() public {
+    //    //will add sig and access control params later
+    // }
 
     function _deployRenAsset(
         uint256 chainId,
         string calldata asset,
         string calldata name,
         string calldata symbol,
-        uint8 decimals,
-        string calldata version
-    ) internal {
+        uint8 decimals
+    ) internal returns (IERC20) {
         bytes memory encodedParameters = abi.encodeWithSignature(
-            "__RenAsset_init(uint256,string,string,string,uint8,address)",
-            chainId,
-            version,
+            // chainId,
             name,
             symbol,
-            decimals,
-            // Owner will be transferred to gateway
-            address(this)
+            decimals
         );
 
-        bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
+        // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
+        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, chainId);
+        symbolToAstralAsset[symbol] = address(astralAsset);
+        LinkedList.append(AstralAssetAddresses, address(astralAsset));
 
-        // address astralAsset = deployProxy(create2Salt, encodedParameters);
+        emit AstralAssetDeployed(chainId, asset, name, symbol, decimals, block.timestamp);
 
-        // emit RenAssetProxyDeployed(chainId, asset, name, symbol, decimals, version);
-
-        // return IERC20(renAsset);
+        return IERC20(astralAsset);
     }
 
     function _deployAssetBridge(
         string calldata asset,
+        string calldata symbol,
         address signatureVerifier,
         address token,
-        string calldata version
-    ) internal {
+        uint256 chainId
+    ) internal returns (IBaseBridge) {
         bytes memory encodedParameters = abi.encodeWithSignature(
-            "__MintGateway_init(string,address,address)",
             asset,
             signatureVerifier,
             token
         );
 
-        bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
+        // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
 
-        // address mintGateway = getMintGatewayProxyBeacon().deployProxy(create2Salt, encodedParameters);
+        BridgeBase assetBridge = new BridgeBase(address(this), token);
+        symbolToAstralBridge[symbol] = address(assetBridge);
+        addressToAstralBridge[token] = address(assetBridge);
+        LinkedList.append(AstralAssetBridgeAddresses, address(assetBridge));
 
-        // emit MintGatewayProxyDeployed(asset, signatureVerifier, token, version);
+        emit AstralAssetBridgeDeployed(chainId, asset, address(assetBridge), block.timestamp);
 
-        // return IMintGateway(mintGateway);
+        return IBaseBridge(address(assetBridge));
     }
 
 }

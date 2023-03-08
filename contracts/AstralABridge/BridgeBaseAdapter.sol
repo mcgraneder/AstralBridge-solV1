@@ -22,8 +22,8 @@ contract BridgeBase {
     Step indexed step
   );
 
-  constructor(address _token) {
-    admin = msg.sender;
+  constructor(address _token, address _admin) {
+    admin = _admin;
     token = IToken(_token);
   }
 
