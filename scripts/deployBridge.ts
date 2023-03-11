@@ -43,7 +43,7 @@ async function main() {
     "100000000000000000000"
   )) as TestNativeERC20Asset;
 
-  await testNativeERC20Asset.deployTransaction.wait(2);
+  await testNativeERC20Asset.deployed();
 
   console.log(`deployed test USDT to address ${testNativeERC20Asset.address}`)
 
@@ -56,7 +56,7 @@ async function main() {
     testNativeERC20Asset.address,
   ])) as TestNativeAssetRegistry;
 
- await testNativeERC20Asset.deployTransaction.wait(2);
+ await testNativeERC20Asset.deployed()
 
  console.log(`deployed test native asset registry to ${nativeAssetRegistry.address}`)
 
@@ -69,20 +69,20 @@ async function main() {
     OWNER.address
   )) as AstralBridgeFactory;
 
- await bridgeFACTORY.deployTransaction.wait(2);
+ await bridgeFACTORY.deployed();
 
  console.log(`bridge factory deployed to address ${bridgeFACTORY.address}\n`);
 
   //deploy astral asset and corresponding bridge
-  await bridgeFACTORY.deployAssetAndBridge(
-    "testAstralUSDT",
-    "astralUSDT",
-    "aUSDT",
-    18
-  );
+ const tx = await bridgeFACTORY.deployAssetAndBridge(
+   "testAstralUSDT",
+   "astralUSDT",
+   "aUSDT",
+   18,
+   { gasLimit: 3000000}
+ );
 
-  console.log(`deployed test asset`)
-  // await deploymentTx.wait(2)
+  await tx.wait(1)
 
   const astralUSDTAddress = await bridgeFACTORY.getAssetBySymbol("aUSDT")
   const astralUSDTBridgeAddress = await bridgeFACTORY.getBridgeBySymbol("aUSDT");
