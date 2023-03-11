@@ -26,9 +26,12 @@ contract AstralERC20Logic is ERC20, Ownable {
         string memory _name, 
         string memory _symbol, 
         uint8 _decimals, 
-        uint256 _chainId
+        uint256 _chainId,
+        uint256 rate
     ) public ERC20(_name, _symbol){
+        require(rate > 0, "rate must be greater than 0");
         chainId = _chainId;
+        _rate = rate;
         if(_decimals != 0) setDecimals = _decimals;
         else setDecimals = 18;
     }
@@ -72,7 +75,7 @@ contract AstralERC20Logic is ERC20, Ownable {
         // in `transfer`).
         require(
             recipient != address(this),
-            "RenERC20: can't transfer to token address"
+            "AstralERC20: can't transfer to token address"
         );
         return super.transferFrom(sender, recipient, amount);
     }

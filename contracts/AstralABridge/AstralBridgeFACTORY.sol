@@ -75,7 +75,7 @@ contract AstralBridgeFactory is Ownable {
         );
 
         // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
-        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, chainId);
+        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, chainId, 300);
         symbolToAstralAsset[symbol] = address(astralAsset);
         LinkedList.append(AstralAssetAddresses, address(astralAsset));
 

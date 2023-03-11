@@ -121,16 +121,22 @@ contract BridgeBase {
     processedNonces[otherChainNonce] = true;
 
     bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
+    uint256 tokenFeeRate = token.exchangeRateCurrent();
 
     require(
       verifySignature(sigHash, _sig), 
       "unauthorized mint: signature does not match request"
     );
+    require((_amount * 10000) / 10000 == _amount, "amount too low");
 
+    //get the fee for the admin
+
+    uint tokenFee = (_amount * tokenFeeRate) / 10000;
+    console.log("token feeeeeeee", tokenFee);
     //mint for user
-    token.mint(msg.sender, _amount);
+    token.mint(msg.sender, _amount - tokenFee);
     //mint fee for admin
-    token.mint(admin, _amount);
+    token.mint(admin, tokenFee);
 
     emit MintEvent(
       msg.sender,
