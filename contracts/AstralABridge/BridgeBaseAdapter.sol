@@ -1,7 +1,8 @@
 pragma solidity >= 0.8.9;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {AstralERC20Logic} from "./AstralERC20Asset/AstralERC20.sol";
-import {TestNativeAssetRegistry} from "./tesNativeAssetRegistry";
+import {TestNativeAssetRegistry} from "./tesNativeAssetRegistry.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 interface IToken {
   function mint(address to, uint amount) external;
@@ -11,7 +12,7 @@ interface IToken {
 contract BridgeBase {
 
   address public admin;
-  IToken public token;
+  AstralERC20Logic public token;
   uint public nonce;
   uint256 mintFee = 0; //for now
   uint256 burnFee = 0; //fornow
@@ -49,8 +50,8 @@ contract BridgeBase {
     bytes memory _sig, 
     address to, 
     uint amount, 
-    uint otherChainNonce
-    string memory bridgeAction
+    uint otherChainNonce,
+    string memory bridgeAction,
     address token
   ) external {
     bytes32 BridgeAction =  keccak256(bytes(bridgeAction));
@@ -60,43 +61,44 @@ contract BridgeBase {
     bytes32 release = keccak256(bytes("RELEASE"));
 
     bool doesAssetExist = false;
-    address[] memory supportedAstralAssets = getAllNaitveERC20Asset();
+    address[2] memory supportedAstralAssets = [address(this), msg.sender];
     for(uint i = 0; i < supportedAstralAssets.length; i++) {
       if(supportedAstralAssets[i] == token) doesAssetExist = true;
       break;
     }
-    if (doesAssetExists && BridgeAction == lock) {
-      AstralERC20Logic(token).transferFrom(to, transferContract, amount);
-      _lock();
-    } else if (doesAssetExists && BridgeAction == release) {
-      transferContract.transferBackToBridge(address(this), amount);
-      _release();
-    } else if (!doesAssetExists && BridgeAction == mint) {
-       _mint(
-        bytes32 _payloadHash, 
-        bytes32 _nonceHash, 
-        bytes memory _sig, 
-        address to, 
-        uint amount, 
-        uint otherChainNonce
-       );
-    }else if (!doesAssetExists && BridgeAction == burn) {
-       _burn(to, amount);
+    if (doesAssetExist && BridgeAction == lock) {
+      // AstralERC20Logic(token).transferFrom(to, transferContract, amount);
+      // lock();
+    } else if (doesAssetExist && BridgeAction == release) {
+      // transferContract.transferBackToBridge(address(this), amount);
+      // release();
+    } else if (!doesAssetExist && BridgeAction == mint) {
+      //  mint(
+      //   bytes32 _payloadHash, 
+      //   bytes32 _nonceHash, 
+      //   bytes memory _sig, 
+      //   address to, 
+      //   uint amount, 
+      //   uint otherChainNonce
+      //  );
+    }else if (!doesAssetExist && BridgeAction == burn) {
+      //  burn(to, amount);
+    
     }
-    }
+    
 
   }
 
   function burn(address to, uint amount) external {
     require(msg.sender == admin, 'only admin');
-    require(processedNonces[otherChainNonce] == false, 'transfer already processed');
+    // require(processedNonces[otherChainNonce] == false, 'transfer already processed');
 
     //mint for user
     token.burn(to, amount);
     //mint fee for admin
-    token.butn(admin, amount);
+    token.burn(admin, amount);
 
-    emit Burn(
+    emit BurnEvent(
       msg.sender,
       to,
       amount,
@@ -111,14 +113,14 @@ contract BridgeBase {
     bytes32 _nonceHash, 
     bytes memory _sig, 
     address to, 
-    uint amount, 
+    uint _amount, 
     uint otherChainNonce
   ) external {
     require(msg.sender == admin, 'only admin');
     require(processedNonces[otherChainNonce] == false, 'transfer already processed');
     processedNonces[otherChainNonce] = true;
 
-    bytes32 sigHash = hashForSignature(_pHash, _amount, msg.sender, _nHash);
+    bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
 
     require(
       verifySignature(sigHash, _sig), 
@@ -126,14 +128,14 @@ contract BridgeBase {
     );
 
     //mint for user
-    token.mint(to, amount);
+    token.mint(to, _amount);
     //mint fee for admin
-    token.mint(admin, amount);
+    token.mint(admin, _amount);
 
     emit MintEvent(
       msg.sender,
       to,
-      amount,
+      _amount,
       block.timestamp,
       otherChainNonce,
       Step.Mint

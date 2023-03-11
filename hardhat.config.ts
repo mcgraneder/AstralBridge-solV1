@@ -53,12 +53,13 @@ const config: HardhatUserConfig = {
       chainId: 31337,
       gas: 3000000,
       url: "http://127.0.0.1:8545/",
-      // accounts: [process.env.PK1!],
+      accounts: [process.env.PK1!],
     },
     local: {
       chainId: 31337,
       gas: 3000000,
       url: "http://0.0.0.0:8545",
+      accounts: [process.env.PK1!],
     },
     catalogLocal: {
       chainId: 17,

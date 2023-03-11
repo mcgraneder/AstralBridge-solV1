@@ -46,14 +46,16 @@ contract AstralBridgeFactory is Ownable {
         string calldata name, 
         string calldata symbol,
          uint8 decimals 
-    ) public onlyOwner {
+    ) public onlyOwner returns (address, address) {
         //check if asset exists
         address a = symbolToAstralAsset[symbol];
         console.log(a);
 
         address token = address(_deployAstralAsset(block.chainid, asset, name, symbol, decimals));
-        _deployAssetBridge(asset, symbol, address(this), token, block.chainid);
+        address bridge =address( _deployAssetBridge(asset, symbol, address(this), token, block.chainid));
         numAstralAssets++;
+
+        return (token, bridge);
     }
 
     function _deployAstralAsset(
