@@ -13,6 +13,7 @@ import "hardhat/console.sol";
 
 contract AstralBridgeFactory is Ownable {
 
+    address signatureVerifier;
     uint8 numAstralAssets = 0;
     LinkedList.List private AstralAssetAddresses;
     LinkedList.List private AstralAssetBridgeAddresses;
@@ -37,9 +38,10 @@ contract AstralBridgeFactory is Ownable {
     mapping(address => address) addressToAstralBridge;
     mapping(string => address) symbolToAstralBridge;
 
-    // constructor() public {
-    //    //will add sig and access control params later
-    // }
+    constructor(address _signatureVerifier) public {
+        signatureVerifier = _signatureVerifier;
+       //will add sig and access control params later
+    }
 
     function deployAssetAndBridge(
         string calldata asset, 
@@ -49,13 +51,13 @@ contract AstralBridgeFactory is Ownable {
     ) public onlyOwner returns (address, address) {
         //check if asset exists
         address a = symbolToAstralAsset[symbol];
-        console.log(a);
-
-        address token = address(_deployAstralAsset(block.chainid, asset, name, symbol, decimals));
-        address bridge =address( _deployAssetBridge(asset, symbol, address(this), token, block.chainid));
+  
+        AstralERC20Logic token = _deployAstralAsset(block.chainid, asset, name, symbol, decimals);
+        address bridge = address( _deployAssetBridge(asset, symbol, signatureVerifier, address(token), block.chainid));
+        token.transferOwnership(bridge);
         numAstralAssets++;
 
-        return (token, bridge);
+        return (address(token), bridge);
     }
 
     function _deployAstralAsset(
@@ -64,7 +66,7 @@ contract AstralBridgeFactory is Ownable {
         string calldata name,
         string calldata symbol,
         uint8 decimals
-    ) internal returns (IERC20) {
+    ) internal returns (AstralERC20Logic) {
         bytes memory encodedParameters = abi.encodeWithSignature(
             // chainId,
             name,
@@ -79,7 +81,7 @@ contract AstralBridgeFactory is Ownable {
 
         emit AstralAssetDeployed(chainId, name, symbol, decimals, block.timestamp);
 
-        return IERC20(astralAsset);
+        return AstralERC20Logic(astralAsset);
     }
 
     function _deployAssetBridge(
@@ -97,7 +99,8 @@ contract AstralBridgeFactory is Ownable {
 
         // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
 
-        BridgeBase assetBridge = new BridgeBase(address(this), token);
+        console.log("signature veridier in test", signatureVerifier);
+        BridgeBase assetBridge = new BridgeBase(signatureVerifier, token);
         symbolToAstralBridge[symbol] = address(assetBridge);
         addressToAstralBridge[token] = address(assetBridge);
         LinkedList.append(AstralAssetBridgeAddresses, address(assetBridge));
