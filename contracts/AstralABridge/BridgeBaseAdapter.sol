@@ -3,6 +3,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {AstralERC20Logic} from "./AstralERC20Asset/AstralERC20.sol";
 import {TestNativeAssetRegistry} from "./tesNativeAssetRegistry.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {AstralAssetVault} from "./AstralERC20Asset/AstralAssetValut.sol";
 import "hardhat/console.sol";
 
 interface IToken {
@@ -19,6 +20,7 @@ contract BridgeBase {
   uint256 burnFee = 0; //fornow
 
   mapping(uint => bool) public processedNonces;
+  mapping(address => uint256) lockBalance;
 
   enum Step { Burn, Mint }
 
@@ -39,6 +41,17 @@ contract BridgeBase {
     uint nonce,
     Step indexed step
   );
+
+   event AssetLocked(
+        address _for,
+        uint amount,
+        uint256 timestamp
+    );
+    event AssetReleased(
+        address _for,
+        uint amount,
+        uint256 timestamp
+    );
 
   constructor(address _admin, address _token) {
   
@@ -148,12 +161,62 @@ contract BridgeBase {
     );
   }
 
-  function lock() external {
+  function lock(address regsitryAddress, uint256 _amount) external {
+    TestNativeAssetRegistry registry = TestNativeAssetRegistry(regsitryAddress);
+    
+    address[] memory assetRegistry = registry.getAllNaitveERC20Asset();
+    bool doesAssetExist = false;
+    for(uint i = 0; i < assetRegistry.length; i++) {
+      if(assetRegistry[i] == address(token)) doesAssetExist = true;
+      break;
+    }
+    require(doesAssetExist, "lock asset not supported");
+    require(_amount > 0, "lock amount must be greater than zero");
+    uint256 amountFeeRate = token.exchangeRateCurrent();
+    token.transferFrom(msg.sender, address(this), _amount - amountFeeRate);
+    lockBalance[msg.sender] += _amount - amountFeeRate;
+
+    emit AssetLocked(msg.sender, _amount - amountFeeRate, block.timestamp);
+    
+
 
   }
 
-  function release() external {
-    
+  function release(    bytes32 _payloadHash, 
+    bytes32 _nonceHash, 
+    bytes memory _sig, 
+    uint _amount, 
+    uint otherChainNonce
+  ) external {
+    require(processedNonces[otherChainNonce] == false, 'transfer already processed');
+    processedNonces[otherChainNonce] = true;
+
+    bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
+    uint256 tokenFeeRate = token.exchangeRateCurrent();
+
+    require(
+      verifySignature(sigHash, _sig), 
+      "unauthorized mint: signature does not match request"
+    );
+    require((_amount * 10000) / 10000 == _amount, "amount too low");
+
+    //get the fee for the admin
+
+    uint tokenFee = (_amount * tokenFeeRate) / 10000;
+    console.log("token feeeeeeee", tokenFee);
+    //mint for user
+    token.transfer(msg.sender, _amount - tokenFee);
+    //mint fee for admin
+    token.transfer(admin, tokenFee);
+
+    emit MintEvent(
+      msg.sender,
+      msg.sender,
+      _amount,
+      block.timestamp,
+      otherChainNonce,
+      Step.Mint
+    );
   }
 
   function hashForSignature(

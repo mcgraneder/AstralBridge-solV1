@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
+import {AstralAssetVault} from "./AstralAssetValut.sol";
 //right now transfer and transfer from can be called by anyone
 //in futrue disable thi so that both can only be called by the assets gateway contract
 
@@ -19,6 +19,7 @@ contract AstralERC20Logic is ERC20, Ownable {
     uint256 public constant _rateScale = 1e18;
     uint256 internal _rate;
     uint256 public chainId;
+    AstralAssetVault tokenVault;
 
     event LogRateChanged(uint256 indexed _rate);
 
@@ -34,10 +35,16 @@ contract AstralERC20Logic is ERC20, Ownable {
         _rate = rate;
         if(_decimals != 0) setDecimals = _decimals;
         else setDecimals = 18;
+
+        tokenVault = new AstralAssetVault();
     }
 
     function chain() public view returns (uint256) {
         return chainId;
+    }
+
+    function getTokenValut() public view returns (AstralAssetVault) {
+        return tokenVault;
     }
 
     function decimals() public view override returns (uint8) {

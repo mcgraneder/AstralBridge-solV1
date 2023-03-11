@@ -9,6 +9,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {LinkedList} from "../utils/LinkedList.sol";
 import {BridgeBase} from "./BridgeBaseAdapter.sol";
 import {IBaseBridge} from "../interfaces/AstralBridge/IBaseBridge.sol";
+import {AstralAssetVault} from "./AstralERC20Asset/AstralAssetValut.sol";
 import "hardhat/console.sol";
 
 contract AstralBridgeFactory is Ownable {
