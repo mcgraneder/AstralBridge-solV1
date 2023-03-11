@@ -161,19 +161,20 @@ contract BridgeBase {
     );
   }
 
-  function lock(address regsitryAddress, uint256 _amount) external {
+  function lock(address regsitryAddress, address lockAsset, uint256 _amount) external {
     TestNativeAssetRegistry registry = TestNativeAssetRegistry(regsitryAddress);
     
     address[] memory assetRegistry = registry.getAllNaitveERC20Asset();
     bool doesAssetExist = false;
     for(uint i = 0; i < assetRegistry.length; i++) {
-      if(assetRegistry[i] == address(token)) doesAssetExist = true;
+      if(assetRegistry[i] == lockAsset) doesAssetExist = true;
       break;
     }
     require(doesAssetExist, "lock asset not supported");
     require(_amount > 0, "lock amount must be greater than zero");
     uint256 amountFeeRate = token.exchangeRateCurrent();
-    token.transferFrom(msg.sender, address(this), _amount - amountFeeRate);
+    // token.approve(address(this), 10000000000000);
+    IERC20(lockAsset).transferFrom(msg.sender, address(this), _amount - amountFeeRate);
     lockBalance[msg.sender] += _amount - amountFeeRate;
 
     emit AssetLocked(msg.sender, _amount - amountFeeRate, block.timestamp);

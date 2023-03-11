@@ -15,6 +15,10 @@ import Web3 from "web3";
 import { ethers } from "hardhat";
 import config from "hardhat";
 // import { Account } from "web3-eth-accounts";
+import { TestNativeAssetRegistry } from "../typechain-types/contracts/AstralABridge/tesNativeAssetRegistry.sol/TestNativeAssetRegistry";
+import { TestNativeAssetRegistry__factory } from "../typechain-types/factories/contracts/AstralABridge/tesNativeAssetRegistry.sol/TestNativeAssetRegistry__factory";
+import { TestNativeERC20Asset__factory } from "../typechain-types/factories/contracts/AstralABridge/TestNativeERC20Asset__factory";
+import { TestNativeERC20Asset } from "../typechain-types/contracts/AstralABridge/TestNativeERC20Asset";
 
 chai.use(chaiAsPromised);
 
@@ -25,6 +29,8 @@ let mainAccount: any;
 let privKey: Buffer;
 let mnemonicWallet: Wallet;
 let OWNER_PRIVKEY: Buffer;
+let nativeAssetRegistry: TestNativeAssetRegistry;
+let testNativeERC20Asset: TestNativeERC20Asset;
 
 describe("CatalogRen", function () {
   // Users
@@ -52,6 +58,31 @@ describe("CatalogRen", function () {
     );
 
     OWNER_PRIVKEY = Buffer.from(wallet.privateKey.slice(2), "hex");
+
+    const TestNativeERC20Asset = (await ethers.getContractFactory(
+      "TestNativeERC20Asset"
+    )) as TestNativeERC20Asset__factory;
+
+    testNativeERC20Asset = (await TestNativeERC20Asset.connect(ALICE).deploy(
+      "USDT",
+      "USDT Tether",
+      18,
+      "100000000000000000000"
+    )) as TestNativeERC20Asset;
+
+    await testNativeERC20Asset.deployed();
+
+    //deploy testNative asset registry
+    const NativeAssetRegistry = (await ethers.getContractFactory(
+      "TestNativeAssetRegistry"
+    )) as TestNativeAssetRegistry__factory;
+
+    nativeAssetRegistry = (await NativeAssetRegistry.connect(OWNER).deploy([
+      testNativeERC20Asset.address,
+    ])) as TestNativeAssetRegistry;
+
+    await nativeAssetRegistry.deployed();
+
     //deploy bridge factory
     const BridgeFACTORY = (await ethers.getContractFactory(
       "AstralBridgeFactory"
@@ -70,7 +101,7 @@ describe("CatalogRen", function () {
       "testAstralUSDT",
       "astralUSDT",
       "aUSDT",
-      6
+      18
     );
 
     //get deployed bridge instance
@@ -86,8 +117,6 @@ describe("CatalogRen", function () {
       "BridgeBase",
       allBridgesAndAssets[1][0]
     )) as BridgeBase;
-
-    // await astralUSDT.mint(OWNER.address, "1000000000000000000");
 
     console.log(`generated private key ${OWNER_PRIVKEY}`);
     console.log(
@@ -105,7 +134,7 @@ describe("CatalogRen", function () {
     );
   });
 
-  describe("Testing", () => {
+  describe("Testing Isolated Mint", () => {
     it("Should be able to mint from valid signature", async () => {
       const nHash = randomBytes(32);
       const pHash = randomBytes(32);
@@ -151,5 +180,41 @@ describe("CatalogRen", function () {
       console.log(`Owner balance before: ${balanceBeforeSigner}`);
       console.log(`Owner After before: ${balanceAfrerSigner}`);
     });
+    it("Should be able to lock", async () => {
+      const balanceBeforeUser = await testNativeERC20Asset.balanceOf(
+        ALICE.address
+      );
+      const balanceBeforeSigner = await testNativeERC20Asset.balanceOf(
+        astralUSDTBridge.address
+      );
+
+      //approve bridge to tranfer asset
+      await testNativeERC20Asset
+        .connect(ALICE)
+        .approve(astralUSDTBridge.address, 1000);
+      await astralUSDTBridge
+        .connect(ALICE)
+        .lock(nativeAssetRegistry.address, testNativeERC20Asset.address, 1000);
+
+      const balanceAfrerUser = await testNativeERC20Asset.balanceOf(
+        ALICE.address
+      );
+      const balanceAfrerSigner = await testNativeERC20Asset.balanceOf(
+        astralUSDTBridge.address
+      );
+
+      console.log(`Alice balance before: ${balanceBeforeUser}`);
+      console.log(`Alice After before: ${balanceAfrerUser}`);
+
+      console.log(`Owner balance before: ${balanceBeforeSigner}`);
+      console.log(`Owner After before: ${balanceAfrerSigner}`);
+    });
   });
+
+  //    describe("Testing Isolated Lock", () => {
+  //      it("Should be able to lock", async () => {
+  //        const balanceBeforeUser = await astralUSDT.balanceOf(ALICE.address);
+  //        console.log(`Alice balance before: ${balanceBeforeUser}`);
+  //      });
+  //    });
 });
