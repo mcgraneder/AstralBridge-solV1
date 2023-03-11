@@ -56,7 +56,7 @@ contract AstralBridgeFactory is Ownable {
         AstralERC20Logic token = _deployAstralAsset(block.chainid, asset, name, symbol, decimals);
         address bridge = address( _deployAssetBridge(asset, symbol, signatureVerifier, address(token), block.chainid));
         token.transferOwnership(bridge);
-        numAstralAssets++;
+        numAstralAssets+=1;
 
         return (address(token), bridge);
     }
@@ -120,8 +120,19 @@ contract AstralBridgeFactory is Ownable {
         return (allAssets, allBridges);
     }
 
+    function setAstralAsset(string memory symbol) public {
+        symbolToAstralAsset[symbol] = msg.sender;
+    }
     function getNumAssets() public view returns(uint8) {
         return numAstralAssets;
+    }
+
+    function getAssetBySymbol(string memory _symbol) public view returns (address) {
+        return symbolToAstralAsset[_symbol];
+    }
+
+        function getBridgeBySymbol(string memory _symbol) public view returns (address) {
+        return symbolToAstralBridge[_symbol];
     }
 
 }

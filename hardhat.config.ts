@@ -114,7 +114,10 @@ const config: HardhatUserConfig = {
       chainId: 5,
       url: `https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161`,
       gas: 3000000,
-      accounts: [process.env.PK1!],
+      accounts: [
+        process.env.PK1!,
+        process.env.PK2!,
+      ]
     },
     optimisticKovan: {
       chainId: 420,

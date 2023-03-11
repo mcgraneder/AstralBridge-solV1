@@ -18,6 +18,8 @@ contract BridgeBase {
   uint public nonce;
   uint256 mintFee = 0; //for now
   uint256 burnFee = 0; //fornow
+  uint256 lockMintNonce = 0;
+  uint256 burnReleaseNonce = 0;
 
   mapping(uint => bool) public processedNonces;
   mapping(address => uint256) lockBalance;

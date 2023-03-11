@@ -211,10 +211,10 @@ describe("CatalogRen", function () {
     });
   });
 
-  //    describe("Testing Isolated Lock", () => {
-  //      it("Should be able to lock", async () => {
-  //        const balanceBeforeUser = await astralUSDT.balanceOf(ALICE.address);
-  //        console.log(`Alice balance before: ${balanceBeforeUser}`);
-  //      });
-  //    });
+     describe("Testing Isolated Lock", () => {
+       it("Should be able to lock", async () => {
+         const balanceBeforeUser = await astralUSDT.balanceOf(ALICE.address);
+         console.log(`Alice balance before: ${balanceBeforeUser}`);
+       });
+     });
 });
