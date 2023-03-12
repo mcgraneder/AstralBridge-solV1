@@ -36,7 +36,7 @@ contract BridgeBase {
     Step indexed step
   );
 
-  event BurnEvent(
+  event ReleaseEvent(
     address from,
     address to,
     uint amount,
@@ -51,10 +51,11 @@ contract BridgeBase {
         uint256 timestamp,
         uint256 nonce
     );
-    event AssetReleased(
+    event AssetBurnt(
         address _for,
         uint amount,
-        uint256 timestamp
+        uint256 timestamp,
+        uint256 nonce
     );
 
   constructor(address _admin, address _token) {
@@ -108,23 +109,26 @@ contract BridgeBase {
 
   }
 
-  function burn(address to, uint amount) external {
-    require(msg.sender == admin, 'only admin');
-    // require(processedNonces[otherChainNonce] == false, 'transfer already processed');
+  function burn(address to, uint _amount) external {
+    require(to != address(0), "invalid burn address");
+    require(token.balanceOf(msg.sender) >= _amount, "insufficent balance");
+
+    uint256 amountFeeRate = token.exchangeRateCurrent();
+    uint256 recipientAmount = _amount - amountFeeRate;
+
+    require(
+      (_amount * 10000) / 10000 ==  _amount && 
+      _amount > 0, 
+      "lock amount must be greater than zero"
+    );
 
     //mint for user
-    token.burn(to, amount);
+    token.burn(msg.sender, _amount);
     //mint fee for admin
-    token.burn(admin, amount);
+    token.mint(admin, amountFeeRate);
 
-    emit BurnEvent(
-      msg.sender,
-      to,
-      amount,
-      block.timestamp,
-      0,
-      Step.Mint
-    );
+    emit AssetBurnt(msg.sender, _amount - amountFeeRate, block.timestamp, burnReleaseNonce);
+    burnReleaseNonce += 1;
   }
 
   function mint(
@@ -183,48 +187,60 @@ contract BridgeBase {
 
     IERC20(lockAsset).transferFrom(msg.sender, address(this), _amount - amountFeeRate);
     lockBalance[msg.sender] += _amount - amountFeeRate;
-    lockMintNonce+=1;
 
     emit AssetLocked(msg.sender, _amount - amountFeeRate, block.timestamp, lockMintNonce);
-    
-
+    lockMintNonce+=1;
 
   }
 
+//on the creation of an astralAsset tie in th address of the associated token
+//so we can always know were releasing teh correct token
   function release(    bytes32 _payloadHash, 
     bytes32 _nonceHash, 
     bytes memory _sig, 
-    uint _amount, 
-    uint otherChainNonce
+    uint _amount,
+    address releaseAsset, 
+    address recipient,
+    uint otherChainNonce,
+    address regsitryAddress
   ) external {
     require(processedBurnNonces[otherChainNonce] == false, 'transfer already processed');
     processedBurnNonces[otherChainNonce] = true;
 
-    bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
+    TestNativeAssetRegistry registry = TestNativeAssetRegistry(regsitryAddress);
+    
+    address[] memory assetRegistry = registry.getAllNaitveERC20Asset();
+    bool doesAssetExist = false;
+    for(uint i = 0; i < assetRegistry.length; i++) {
+      if(assetRegistry[i] == releaseAsset) doesAssetExist = true;
+      break;
+    }
+    require(doesAssetExist, "lock asset not supported");
+
+    bytes32 sigHash = hashForSignature(_payloadHash, _amount, recipient, _nonceHash);
     uint256 tokenFeeRate = token.exchangeRateCurrent();
 
+    uint tokenFee = (_amount * tokenFeeRate) / 10000;
     require(
       verifySignature(sigHash, _sig), 
       "unauthorized mint: signature does not match request"
     );
-    require((_amount * 10000) / 10000 == _amount, "amount too low");
+    require(
+      (_amount * 10000) / 10000 == _amount
+      && lockBalance[recipient] - tokenFee >= _amount, 
+      "amount too low");
 
-    //get the fee for the admin
-
-    uint tokenFee = (_amount * tokenFeeRate) / 10000;
-    console.log("token feeeeeeee", tokenFee);
     //mint for user
-    token.transfer(msg.sender, _amount - tokenFee);
-    //mint fee for admin
-    token.transfer(admin, tokenFee);
+    IERC20(releaseAsset).transfer(msg.sender, _amount - tokenFee);
+    IERC20(releaseAsset).transfer(admin, tokenFee);
 
-    emit MintEvent(
-      msg.sender,
-      msg.sender,
+    emit ReleaseEvent(
+      recipient,
+      address(this),
       _amount,
       block.timestamp,
-      otherChainNonce,
-      Step.Mint
+      burnReleaseNonce,
+      Step.Burn
     );
   }
 
