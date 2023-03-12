@@ -5,14 +5,28 @@
 
 import RenJS from "@renproject/ren";
 import { RenNetwork } from "@renproject/utils";
-import chalk from "chalk";
+// import chalk from "chalk";
 import { TestNativeAssetRegistry } from "../../typechain-types/contracts/AstralABridge/tesNativeAssetRegistry.sol/TestNativeAssetRegistry";
 import { AstralERC20Logic } from "../../typechain-types/contracts/AstralABridge/AstralERC20Asset/AstralERC20.sol/AstralERC20Logic";
 import { BridgeBase } from "../../typechain-types/contracts/AstralABridge/BridgeBaseAdapter.sol/BridgeBase";
 import { TestNativeERC20Asset } from "../../typechain-types/contracts/AstralABridge/TestNativeERC20Asset";
 import { AstralBridgeFactory } from "../../typechain-types/contracts/AstralABridge/AstralBridgeFACTORY.sol/AstralBridgeFactory";
 
-const loop = async () => {};
+const loop = async (
+  nativeAsset: TestNativeERC20Asset,
+  registry: TestNativeAssetRegistry,
+  bridgeFactory: AstralBridgeFactory,
+  bridgeAsset: AstralERC20Logic,
+  assetBridge: BridgeBase
+) => {
+    // console.log("hey")
+    
+  nativeAsset.on("Transfer", (_from, _to, _value) => {
+    console.log(_from, _to, _value);
+  });
+
+  return
+};
 
 async function main(
   renJS: RenJS,
@@ -23,18 +37,24 @@ async function main(
   assetBridge: BridgeBase,
   network: RenNetwork
 ) {
-  console.log(`${chalk.blue("[bl/worker1]")} listening...`);
+  console.log(`${("[bl/worker1]")} listening...`);
 
   while (1) {
     try {
-      await loop();
+      await loop(
+        nativeAsset,
+        registry,
+        bridgeFactory,
+        bridgeAsset,
+        assetBridge
+      );
     } catch (error) {
       console.error(error);
     }
   }
 }
 
-export const BridgeWorker = (
+export const BridgeWorker = async(
   renJS: RenJS,
   nativeAsset: TestNativeERC20Asset,
   registry: TestNativeAssetRegistry,

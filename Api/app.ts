@@ -37,6 +37,8 @@ import {
   BridgeFactory,
 } from "../constants/deployments";
 import { BridgeWorker } from "./bridge/bridgeWorker";
+import { ecrecover, ecsign, pubToAddress } from "ethereumjs-util";
+import { randomBytes, Ox } from "../utils/testHelpers";
 
 const isAddressValid = (address: string): boolean => {
   if (/^0x[a-fA-F0-9]{40}$/.test(address)) return true;
@@ -57,6 +59,7 @@ let astralUSDTBridge: BridgeBase;
 let bridgeFACTORY: AstralBridgeFactory;
 let nativeAssetRegistry: TestNativeAssetRegistry;
 let testNativeERC20Asset: TestNativeERC20Asset;
+let nativeUSDTContract: TestNativeERC20Asset;
 
 app.use(express.json());
 app.use(cors({ origin: "*" }));
@@ -124,7 +127,7 @@ async function setup() {
     RenNetwork.Testnet
   );
 
-  const nativeUSDTContract = (await returnContract(
+  nativeUSDTContract = (await returnContract(
     testNativeAssetDeployments[Ethereum.chain]["USDT"],
     TestNativeERC20AssetABI,
     provider
@@ -154,18 +157,49 @@ async function setup() {
     provider
   )) as BridgeBase;
 
-  BridgeWorker(
-    RenJSProvider,
-    nativeUSDTContract,
-    nativeAssetRegistry,
-    bridgeFactory,
-    astralUSDT,
-    astralUSDTBridge
-  );
+  //    await BridgeWorker(
+  //     RenJSProvider,
+  //     nativeUSDTContract,
+  //     nativeAssetRegistry,
+  //     bridgeFactory,
+  //     astralUSDT,
+  //     astralUSDTBridge
+  //   );
 }
 
-setup().then(() =>
-  app.listen(port, () => {
-    console.log(`listening at http://localhost:${port}`);
-  })
-);
+setup().then(() => {
+  nativeUSDTContract.on("Transfer", async (_from, _to, _value) => {
+    console.log(_from, _to, _value);
+    const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY.slice(2), "hex");
+    const nHash = randomBytes(32);
+    const pHash = randomBytes(32);
+
+    const hash = await astralUSDTBridge.hashForSignature(
+      pHash,
+      _value,
+      _from,
+      nHash
+    );
+    const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
+
+    const publicKeyToAddress = pubToAddress(
+      ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
+    ).toString("hex");
+
+    const sigString = Ox(
+      `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
+    );
+
+    const veririedSignature = await astralUSDTBridge.verifySignature(
+      hash,
+      sigString
+    );
+
+    //if not verified throw new error
+
+    const balanceBeforeUser = await astralUSDT.balanceOf(_from);
+    const balanceBeforeSigner = await astralUSDT.balanceOf(" OWNER.address");
+
+    await astralUSDTBridge.mint(pHash, nHash, sigString, "1000", 0);
+  });
+});
