@@ -16,13 +16,10 @@ export const testNativeAssetDeployments: {
   },
 };
 
-export const registries: { [chain: string]: { [asset: string]: string } } = {
-  [Ethereum.chain]: {
-    ["TesNativeAssetRegistry"]: "0xacD416e4bE6820dB2A9e6c36b122E1767e2Aeacb",
-  },
-  [BinanceSmartChain.chain]: {
-    ["TesNativeAssetRegistry"]: "0x877841aEa7C68f4F9f96012bc69ad8F49965ffE9",
-  },
+export const registries: { [chain: string]: string } = {
+  [Ethereum.chain]:  "0xacD416e4bE6820dB2A9e6c36b122E1767e2Aeacb",
+  [BinanceSmartChain.chain]: "0x877841aEa7C68f4F9f96012bc69ad8F49965ffE9",
+
 };
 
 export const BridgeFactory: { [chain: string]: string } = {

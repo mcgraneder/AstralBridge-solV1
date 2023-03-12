@@ -3,28 +3,26 @@
 // after submitting the txworker 1 just submits transaction like the existing catalog relayer, and then
 // stores the transaction hash into firebase[swapId].txs.1.inputTx
 
-import RenJS, { GatewayTransaction } from "@renproject/ren";
-import { RenNetwork, utils } from "@renproject/utils";
+import RenJS from "@renproject/ren";
+import { RenNetwork } from "@renproject/utils";
 import chalk from "chalk";
-import { providers, Wallet } from "ethers";
+import { TestNativeAssetRegistry } from "../../typechain-types/contracts/AstralABridge/tesNativeAssetRegistry.sol/TestNativeAssetRegistry";
+import { AstralERC20Logic } from "../../typechain-types/contracts/AstralABridge/AstralERC20Asset/AstralERC20.sol/AstralERC20Logic";
+import { BridgeBase } from "../../typechain-types/contracts/AstralABridge/BridgeBaseAdapter.sol/BridgeBase";
+import { TestNativeERC20Asset } from "../../typechain-types/contracts/AstralABridge/TestNativeERC20Asset";
+import { AstralBridgeFactory } from "../../typechain-types/contracts/AstralABridge/AstralBridgeFACTORY.sol/AstralBridgeFactory";
 
-import Firebase from "../../db/firebase-admin";
-import { Postgres } from "../../services/postgres";
-import { BLStatus, Hop } from "../../util/bl/blTypes";
-import { getChain } from "../../util/bl/getProvider";
-import {
-  buildRenVMGatewayTransaction,
-  detectRenEventsInTransaction,
-} from "../../util/detectRenEvents";
-import { didTransactionFail } from "./buildGatewayFromRenVMTx";
+const loop = async () => {};
 
-const loop = async (
-) => {
-  
-  
-};
-
-async function main(renJS: RenJS, network: RenNetwork) {
+async function main(
+  renJS: RenJS,
+  nativeAsset: TestNativeERC20Asset,
+  registry: TestNativeAssetRegistry,
+  bridgeFactory: AstralBridgeFactory,
+  bridgeAsset: AstralERC20Logic,
+  assetBridge: BridgeBase,
+  network: RenNetwork
+) {
   console.log(`${chalk.blue("[bl/worker1]")} listening...`);
 
   while (1) {
@@ -36,8 +34,23 @@ async function main(renJS: RenJS, network: RenNetwork) {
   }
 }
 
-export const BLWorker1 = (renJS: RenJS, network: RenNetwork) =>
-  main(renJS, network)
+export const BridgeWorker = (
+  renJS: RenJS,
+  nativeAsset: TestNativeERC20Asset,
+  registry: TestNativeAssetRegistry,
+  bridgeFactory: AstralBridgeFactory,
+  bridgeAsset: AstralERC20Logic,
+  assetBridge: BridgeBase
+) =>
+  main(
+    renJS,
+    nativeAsset,
+    registry,
+    bridgeFactory,
+    bridgeAsset,
+    assetBridge,
+    RenNetwork.Testnet
+  )
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(error);
