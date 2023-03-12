@@ -15,13 +15,14 @@ contract BridgeBase {
 
   address public admin;
   AstralERC20Logic public token;
-  uint public nonce;
   uint256 mintFee = 0; //for now
   uint256 burnFee = 0; //fornow
   uint256 lockMintNonce = 0;
   uint256 burnReleaseNonce = 0;
 
-  mapping(uint => bool) public processedNonces;
+  mapping(uint => bool) public processedBurnNonces;
+  mapping(uint => bool) public processedLockNonces;
+
   mapping(address => uint256) lockBalance;
 
   enum Step { Burn, Mint }
@@ -47,7 +48,8 @@ contract BridgeBase {
    event AssetLocked(
         address _for,
         uint amount,
-        uint256 timestamp
+        uint256 timestamp,
+        uint256 nonce
     );
     event AssetReleased(
         address _for,
@@ -120,7 +122,7 @@ contract BridgeBase {
       to,
       amount,
       block.timestamp,
-      nonce,
+      0,
       Step.Mint
     );
   }
@@ -130,12 +132,15 @@ contract BridgeBase {
     bytes32 _nonceHash, 
     bytes memory _sig, 
     uint _amount, 
-    uint otherChainNonce
+    uint otherChainNonce,
+    address mintAddress
   ) external {
-    require(processedNonces[otherChainNonce] == false, 'transfer already processed');
-    processedNonces[otherChainNonce] = true;
+    require(processedLockNonces[otherChainNonce] == false, 'transfer already processed');
+    processedLockNonces[otherChainNonce] = true;
 
-    bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
+    //try do abi.decode payload hash
+
+    bytes32 sigHash = hashForSignature(_payloadHash, _amount, mintAddress, _nonceHash);
     uint256 tokenFeeRate = token.exchangeRateCurrent();
 
     require(
@@ -149,12 +154,12 @@ contract BridgeBase {
     uint tokenFee = (_amount * tokenFeeRate) / 10000;
     console.log("token feeeeeeee", tokenFee);
     //mint for user
-    token.mint(msg.sender, _amount - tokenFee);
+    token.mint(mintAddress, _amount - tokenFee);
     //mint fee for admin
     token.mint(admin, tokenFee);
 
     emit MintEvent(
-      msg.sender,
+      address(this),
       msg.sender,
       _amount,
       block.timestamp,
@@ -175,11 +180,12 @@ contract BridgeBase {
     require(doesAssetExist, "lock asset not supported");
     require(_amount > 0, "lock amount must be greater than zero");
     uint256 amountFeeRate = token.exchangeRateCurrent();
-    // token.approve(address(this), 10000000000000);
+
     IERC20(lockAsset).transferFrom(msg.sender, address(this), _amount - amountFeeRate);
     lockBalance[msg.sender] += _amount - amountFeeRate;
+    lockMintNonce+=1;
 
-    emit AssetLocked(msg.sender, _amount - amountFeeRate, block.timestamp);
+    emit AssetLocked(msg.sender, _amount - amountFeeRate, block.timestamp, lockMintNonce);
     
 
 
@@ -191,8 +197,8 @@ contract BridgeBase {
     uint _amount, 
     uint otherChainNonce
   ) external {
-    require(processedNonces[otherChainNonce] == false, 'transfer already processed');
-    processedNonces[otherChainNonce] = true;
+    require(processedBurnNonces[otherChainNonce] == false, 'transfer already processed');
+    processedBurnNonces[otherChainNonce] = true;
 
     bytes32 sigHash = hashForSignature(_payloadHash, _amount, msg.sender, _nonceHash);
     uint256 tokenFeeRate = token.exchangeRateCurrent();

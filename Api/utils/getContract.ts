@@ -2,6 +2,7 @@ import { getAddress } from "@ethersproject/address";
 import { AddressZero } from "@ethersproject/constants";
 import { Contract } from "@ethersproject/contracts";
 import { JsonRpcSigner, Web3Provider } from "@ethersproject/providers";
+import { Signer } from 'ethers';
 
 const isAddress = (value: any): string | false => {
   try {
@@ -25,7 +26,7 @@ const getProviderOrSigner = (
 const getContract = (
   address: string,
   ABI: any,
-  provider: Web3Provider,
+  provider: Web3Provider | Signer,
 ): Contract => {
   if (!isAddress(address) || address === AddressZero) {
     throw Error(`Invalid 'address' parameter '${address}'.`);
@@ -41,7 +42,7 @@ const getContract = (
 export const returnContract = <contract extends Contract = Contract>(
   tokenddress: string,
   ABI: any,
-  provider: Web3Provider,
+  provider: Web3Provider | Signer,
 ): contract | null => {
   try {
     return getContract(

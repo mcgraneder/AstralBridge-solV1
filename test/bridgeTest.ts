@@ -168,8 +168,8 @@ describe("CatalogRen", function () {
       const balanceBeforeSigner = await astralUSDT.balanceOf(OWNER.address);
 
       await astralUSDTBridge
-        .connect(ALICE)
-        .mint(pHash, nHash, sigString, "1000", 0);
+        .connect(OWNER)
+        .mint(pHash, nHash, sigString, "1000", 0, ALICE.address);
 
       const balanceAfrerUser = await astralUSDT.balanceOf(ALICE.address);
       const balanceAfrerSigner = await astralUSDT.balanceOf(OWNER.address);

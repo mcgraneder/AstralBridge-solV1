@@ -2,6 +2,7 @@ const Web3 = require("web3");
 import {
   BinanceSmartChain,
   Ethereum,
+  EthSigner,
   Goerli,
 } from "@renproject/chains-ethereum";
 import { RenJS } from "@renproject/ren";
@@ -17,13 +18,12 @@ import { EthereumBaseChain } from "@renproject/chains-ethereum/base";
 import { returnContract } from "./utils/getContract";
 import {
   AstralBridgeFactory,
-  BridgeBase,
   IERC20,
   TestNativeAssetRegistry,
   TestNativeERC20Asset,
 } from "../typechain-types";
 import { ERC20ABI } from "@renproject/chains-ethereum/contracts";
-import { BigNumber as BN } from "ethers";
+import { BigNumber as BN, utils, Wallet, Signer } from "ethers";
 import { AstralERC20Logic } from "../typechain-types/contracts/AstralABridge/AstralERC20Asset/AstralERC20.sol/AstralERC20Logic";
 import AstralERC20AssetABI from "../constants/ABIs/AstralERC20AssetABI.json";
 import BridgeAdapterABI from "../constants/ABIs/BridgeAdapterABI.json";
@@ -39,6 +39,8 @@ import {
 import { BridgeWorker } from "./bridge/bridgeWorker";
 import { ecrecover, ecsign, pubToAddress } from "ethereumjs-util";
 import { randomBytes, Ox } from "../utils/testHelpers";
+import { BridgeBase } from "../typechain-types/contracts/AstralABridge/BridgeBaseAdapter.sol/BridgeBase";
+import { keccak256 } from "web3-utils";
 
 const isAddressValid = (address: string): boolean => {
   if (/^0x[a-fA-F0-9]{40}$/.test(address)) return true;
@@ -54,12 +56,9 @@ let EthereumChain: Ethereum;
 let BinanceSmartChainChain: BinanceSmartChain;
 let RenJSProvider: RenJS;
 
-let astralUSDT: AstralERC20Logic;
-let astralUSDTBridge: BridgeBase;
-let bridgeFACTORY: AstralBridgeFactory;
-let nativeAssetRegistry: TestNativeAssetRegistry;
-let testNativeERC20Asset: TestNativeERC20Asset;
-let nativeUSDTContract: TestNativeERC20Asset;
+let astralUSDTBridgeEth: BridgeBase;
+let astralUSDTBridgeBsc: BridgeBase;
+// let astralUSDTBridgeEth: BridgeBase
 
 app.use(express.json());
 app.use(cors({ origin: "*" }));
@@ -121,85 +120,109 @@ async function setup() {
   );
 
   //set up chain contracts for now just using eth and bsc
-  const { provider } = getChain(
+  const { provider, signer } = getChain(
     RenJSProvider,
     Ethereum.chain,
     RenNetwork.Testnet
   );
 
-  nativeUSDTContract = (await returnContract(
-    testNativeAssetDeployments[Ethereum.chain]["USDT"],
-    TestNativeERC20AssetABI,
-    provider
-  )) as TestNativeERC20Asset;
+  const { provider: pBsc, signer: sBsc } = getChain(
+    RenJSProvider,
+    BinanceSmartChain.chain,
+    RenNetwork.Testnet
+  );
 
-  const nativeAssetRegistry = (await returnContract(
-    registries[Ethereum.chain],
-    TestNativeAssetRegistryABI,
-    provider
-  )) as TestNativeAssetRegistry;
+  console.log(provider);
 
-  const bridgeFactory = (await returnContract(
-    BridgeFactory[Ethereum.chain],
-    BridgeFactoryABI,
-    provider
-  )) as AstralBridgeFactory;
-
-  const astralUSDT = (await returnContract(
-    BridgeAssets[Ethereum.chain]["aUSDT"].tokenAddress,
-    AstralERC20AssetABI,
-    provider
-  )) as AstralERC20Logic;
-
-  const astralUSDTBridge = (await returnContract(
+  astralUSDTBridgeEth = (await returnContract(
     BridgeAssets[Ethereum.chain]["aUSDT"].bridgeAddress,
-    AstralERC20AssetABI,
+    BridgeAdapterABI,
     provider
+  )) as BridgeBase;
+
+  astralUSDTBridgeBsc = (await returnContract(
+    BridgeAssets[BinanceSmartChain.chain]["aUSDT"].bridgeAddress,
+    BridgeAdapterABI,
+    pBsc
   )) as BridgeBase;
 
   //    await BridgeWorker(
   //     RenJSProvider,
   //     nativeUSDTContract,
   //     nativeAssetRegistry,
-  //     bridgeFactory,
-  //     astralUSDT,
-  //     astralUSDTBridge
+  //     bridgeFactoryEth,
+  //     astralUSDTEth,
+  //     astralUSDTBridgeEth
   //   );
 }
 
 setup().then(() => {
-  nativeUSDTContract.on("Transfer", async (_from, _to, _value) => {
-    console.log(_from, _to, _value);
-    const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY.slice(2), "hex");
-    const nHash = randomBytes(32);
-    const pHash = randomBytes(32);
+  const filter = {
+    address: "0x1127fd0543D8e748F914D814084552516661a1EB",
+    topics: [
+      // the name of the event, parnetheses containing the data type of each event, no spaces
+      utils.id("AssetLocked(address,uint256,uint256)"),
+    ],
+  };
 
-    const hash = await astralUSDTBridge.hashForSignature(
-      pHash,
-      _value,
-      _from,
-      nHash
-    );
-    const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
+  console.log(astralUSDTBridgeEth.address);
+  const { provider, signer } = getChain(
+    RenJSProvider,
+    BinanceSmartChain.chain,
+    RenNetwork.Testnet
+  );
 
-    const publicKeyToAddress = pubToAddress(
-      ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
-    ).toString("hex");
+  astralUSDTBridgeEth.on(
+    "AssetLocked",
+    async (_from, _value, timestamp, _nonce) => {
+      console.log(_from, _value, timestamp);
+      const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
 
-    const sigString = Ox(
-      `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
-    );
+      const nHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint256"],
+          [_nonce, _value]
+        )
+      );
+      const pHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address"],
+          [_value, _from]
+        )
+      );
 
-    const veririedSignature = await astralUSDTBridge.verifySignature(
-      hash,
-      sigString
-    );
+      const hash = await astralUSDTBridgeBsc.hashForSignature(
+        pHash,
+        _value,
+        _from,
+        nHash
+      );
+      const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
 
-    //if not verified throw new error
+      const publicKeyToAddress = pubToAddress(
+        ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
+      ).toString("hex");
 
-    const balanceBeforeUser = await astralUSDT.balanceOf(_from);
-    const balanceBeforeSigner = await astralUSDT.balanceOf(" OWNER.address");
+      const sigString = Ox(
+        `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
+      );
 
-    await astralUSDTBridge.mint(pHash, nHash, sigString, "1000", 0);
-  });
+      const veririedSignature = await astralUSDTBridgeEth.verifySignature(
+        hash,
+        sigString
+      );
+
+      console.log(`verified signature: ${veririedSignature}`);
+      console.log(`sig string: ${sigString}`);
+      console.log(`public key to address: ${publicKeyToAddress}`);
+      console.log(`hash: ${hash}`);
+
+      const mintTransaction = await astralUSDTBridgeBsc
+        .connect(signer)
+        .mint(pHash, nHash, sigString, _value, _nonce, _from);
+      const mintTxReceipt = await mintTransaction.wait(1);
+
+      console.log(mintTxReceipt);
+    }
+  );
 });

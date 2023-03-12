@@ -79,7 +79,7 @@ async function main() {
    "astralUSDT",
    "aUSDT",
    18,
-   { gasLimit: 3000000}
+   { gasLimit: 7000000}
  );
 
   await tx.wait(1)

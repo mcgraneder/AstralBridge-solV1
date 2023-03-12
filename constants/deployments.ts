@@ -5,41 +5,45 @@ export type BridgeAsset = {
   bridgeAddress: string;
 };
 
+export enum Chains  {
+  Ethereum = "Ethereum",
+  BinanceSmartChain = "BinanceSmartChain"
+}
+
 export const testNativeAssetDeployments: {
-  [chain: string]: { [asset: string]: string };
+  [chain in Chains]: { [asset: string]: string };
 } = {
   [Ethereum.chain]: {
-    ["USDT"]: "0x8E3bb0d99928E293348182d586c598aB73c0E0dc",
+    ["USDT"]: "0x5e10C7e0B2d0cCCe0De1DF789516ad248E71cb0c",
   },
   [BinanceSmartChain.chain]: {
-    ["USDT"]: "0xc17f91e9Dd972f70568E273B639C91654dEF9da3",
+    ["USDT"]: "0x523Fb6B0d3E5f655100c08DAeB507A253Fae71ab",
   },
 };
 
 export const registries: { [chain: string]: string } = {
-  [Ethereum.chain]:  "0xacD416e4bE6820dB2A9e6c36b122E1767e2Aeacb",
-  [BinanceSmartChain.chain]: "0x877841aEa7C68f4F9f96012bc69ad8F49965ffE9",
-
+  [Ethereum.chain]: "0x86F02fCf2B45e7B788e478A58C4F1CdBEE54B644",
+  [BinanceSmartChain.chain]: "0x0935D9e9a294D5D3219f94009EcB374e6716f6bB",
 };
 
 export const BridgeFactory: { [chain: string]: string } = {
-  [Ethereum.chain]: "0x276Ecb061eB2A10F4C732Dde8d08bB13D6F40e06",
-  [BinanceSmartChain.chain]: "0x8244D00c597Efb4b588AC2d6CAc54B2eeD0Ec350",
+  [Ethereum.chain]: "0x83Ee128bAeF586E8004363e51D94bee09Ea5d7f7",
+  [BinanceSmartChain.chain]: "0x76914f539851001b33189473A9EB57cCbE2853C7",
 };
 
 export const BridgeAssets: {
-  [chain: string]: { [asset: string]: BridgeAsset };
+  [chain in Chains]: { [asset: string]: BridgeAsset };
 } = {
   [Ethereum.chain]: {
     ["aUSDT"]: {
-      tokenAddress: "0x93D1Ad49DaD1d24956ffd6C91c0218903E4Fc823",
-      bridgeAddress: "0x1127fd0543D8e748F914D814084552516661a1EB",
+      tokenAddress: "0xa83D9F59AE193641F8C53df7A43222c2A30d8A6f",
+      bridgeAddress: "0x46793585718ad4D54B724f0453fAE697c4915e5e",
     },
   },
   [BinanceSmartChain.chain]: {
     ["aUSDT"]: {
-      tokenAddress: "0x2b0D6fE138edEb15c997bFf6e9FdD22Cb0C0C92c",
-      bridgeAddress: "0x10BEB3CAe2c85779Ca6971248903181d3a48A578",
+      tokenAddress: "0x00222fc4611C4961c17D831c16dB81f37E46905c",
+      bridgeAddress: "0x94b9eC5270694dcAA19B0468865eF4Ed99d315bD",
     },
   },
 };
