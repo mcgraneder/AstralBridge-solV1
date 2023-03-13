@@ -225,13 +225,14 @@ contract BridgeBase {
       verifySignature(sigHash, _sig), 
       "unauthorized mint: signature does not match request"
     );
+    console.log("lock balance is ", lockBalance[recipient], tokenFee, _amount );
     require(
       (_amount * 10000) / 10000 == _amount
-      && lockBalance[recipient] - tokenFee >= _amount, 
+      &&  _amount - tokenFee <= lockBalance[recipient], 
       "amount too low");
 
     //mint for user
-    IERC20(releaseAsset).transfer(msg.sender, _amount - tokenFee);
+    IERC20(releaseAsset).transfer(recipient, _amount - tokenFee);
     IERC20(releaseAsset).transfer(admin, tokenFee);
 
     emit ReleaseEvent(

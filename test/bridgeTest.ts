@@ -41,11 +41,12 @@ describe("CatalogRen", function () {
   // Owner
   let OWNER: SignerWithAddress;
 
+  // before(async () => {
+  //   [OWNER, ALICE, BOB, CHARLIE] = await ethers.getSigners();
+  // });
+
   before(async () => {
     [OWNER, ALICE, BOB, CHARLIE] = await ethers.getSigners();
-  });
-
-  beforeEach(async () => {
     // const signer = new Wallet(account.privateKey, provider);
     const accounts = config?.network.config.accounts as any;
     // let mnemonicWallet = ethers.Wallet.fromMnemonic(
@@ -211,10 +212,89 @@ describe("CatalogRen", function () {
     });
   });
 
-     describe("Testing Isolated Lock", () => {
-       it("Should be able to lock", async () => {
-         const balanceBeforeUser = await astralUSDT.balanceOf(ALICE.address);
-         console.log(`Alice balance before: ${balanceBeforeUser}`);
-       });
-     });
+  describe("Testing Isolated Release", () => {
+    it("Should be able to Burn from valid signature", async () => {
+      const nHash = randomBytes(32);
+      const pHash = randomBytes(32);
+      // const balInBridge = await testNativeERC20Asset.balanceOf(astralUSDTBridge.address);
+
+      // console.log(Number(balInBridge), "is bal")
+
+      const hash = await astralUSDTBridge.hashForSignature(
+        pHash,
+        "700",
+        ALICE.address,
+        nHash
+      );
+      const sig = ecsign(Buffer.from(hash.slice(2), "hex"), OWNER_PRIVKEY);
+
+      const publicKeyToAddress = pubToAddress(
+        ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
+      ).toString("hex");
+
+      expect(publicKeyToAddress).to.equal(OWNER.address.slice(2).toLowerCase());
+
+      const sigString = Ox(
+        `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
+      );
+
+      const veririedSignature = await astralUSDTBridge.verifySignature(
+        hash,
+        sigString
+      );
+
+      expect(veririedSignature).to.be.true;
+
+      const balanceBeforeUser = await testNativeERC20Asset.balanceOf(
+        ALICE.address
+      );
+      const balanceBeforeSigner = await testNativeERC20Asset.balanceOf(
+        OWNER.address
+      );
+
+      await astralUSDTBridge
+        .connect(OWNER)
+        .release(
+          pHash,
+          nHash,
+          sigString,
+          "700",
+          testNativeERC20Asset.address,
+          ALICE.address,
+          0,
+          nativeAssetRegistry.address
+        );
+
+      const balanceAfrerUser = await testNativeERC20Asset.balanceOf(
+        ALICE.address
+      );
+      const balanceAfrerSigner = await testNativeERC20Asset.balanceOf(
+        OWNER.address
+      );
+
+      console.log(`Alice balance before: ${balanceBeforeUser}`);
+      console.log(`Alice After before: ${balanceAfrerUser}`);
+
+      console.log(`Owner balance before: ${balanceBeforeSigner}`);
+      console.log(`Owner After before: ${balanceAfrerSigner}`);
+    });
+  });
+
+  describe("Testing Isolated Release", () => {
+    it("Should be able to Burn from valid signature", async () => {
+      const balNative = await testNativeERC20Asset.balanceOf(ALICE.address);
+      const balAstral = await astralUSDT.balanceOf(ALICE.address);
+
+      console.log(`Alice balance before Native: ${balNative}`);
+      console.log(`Alice After before Astral: ${balAstral}`);
+
+      await astralUSDTBridge.connect(ALICE).burn(testNativeERC20Asset.address, "970")
+
+      const balNativeAfter = await testNativeERC20Asset.balanceOf(ALICE.address);
+      const balAstralAfter = await astralUSDT.balanceOf(ALICE.address);
+
+      console.log(`Alice balance After Native: ${balNativeAfter}`);
+      console.log(`Alice After After Astral: ${balAstralAfter}`);
+    });
+  });
 });
