@@ -16,7 +16,7 @@ import {
   testNativeAssetDeployments,
   registries,
 } from "../constants/deployments";
-import { Ethereum } from "@renproject/chains-ethereum";
+import { Ethereum, BinanceSmartChain } from '@renproject/chains-ethereum';
 
 let astralUSDT: AstralERC20Logic;
 let astralUSDTBridge: BridgeBase;
@@ -30,6 +30,7 @@ let testNativeERC20Asset: TestNativeERC20Asset;
 let ALICE: SignerWithAddress;
 let BOB: SignerWithAddress;
 let CHARLIE: SignerWithAddress;
+
 
 // Owner
 let OWNER: SignerWithAddress;
@@ -45,33 +46,19 @@ async function main() {
 
   const astralUSDTBridge = (await ethers.getContractAt(
     "BridgeBase",
-    BridgeAssets[Ethereum.chain]["aUSDT"].bridgeAddress
+    BridgeAssets[BinanceSmartChain.chain]["aUSDT"].bridgeAddress
   )) as BridgeBase;
 
-  const registry = (await ethers.getContractAt(
-    "TestNativeAssetRegistry",
-    registries[Ethereum.chain]
-  )) as TestNativeAssetRegistry;
+  astralUSDT = (await ethers.getContractAt(
+    "AstralERC20Logic",
+    "0xEf8525d62713CB58638DB331553FCf7ed84F6B49"
+  )) as AstralERC20Logic;
 
-  console.log(await registry.getAllNaitveERC20Asset());
-  console.log(testNativeERC20Asset.address);
-
-  console.log(Number(await testNativeERC20Asset.balanceOf(ALICE.address)));
-
-  const tx = await testNativeERC20Asset
-    .connect(ALICE)
-    .approve(astralUSDTBridge.address, "10000000000000000000");
-
-  const r1 = await tx.wait(1);
-
-  console.log(r1);
+  console.log(Number(await astralUSDT.balanceOf(ALICE.address)));
 
   const tx2 = await astralUSDTBridge
     .connect(ALICE)
-    .burn(
-      testNativeERC20Asset.address,
-      "10000000000000000000"
-    );
+    .burn(testNativeERC20Asset.address, "100000000000000000");
 
   const r2 = await tx2.wait(1);
 

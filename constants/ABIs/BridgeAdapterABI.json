@@ -43,7 +43,7 @@
         "type": "uint256"
       }
     ],
-    "name": "AssetLocked",
+    "name": "AssetBurnt",
     "type": "event"
   },
   {
@@ -66,52 +66,15 @@
         "internalType": "uint256",
         "name": "timestamp",
         "type": "uint256"
-      }
-    ],
-    "name": "AssetReleased",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "date",
-        "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
         "name": "nonce",
         "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "enum BridgeBase.Step",
-        "name": "step",
-        "type": "uint8"
       }
     ],
-    "name": "BurnEvent",
+    "name": "AssetLocked",
     "type": "event"
   },
   {
@@ -155,6 +118,49 @@
       }
     ],
     "name": "MintEvent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "enum BridgeBase.Step",
+        "name": "step",
+        "type": "uint8"
+      }
+    ],
+    "name": "ReleaseEvent",
     "type": "event"
   },
   {
@@ -227,7 +233,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "amount",
+        "name": "_amount",
         "type": "uint256"
       }
     ],
@@ -392,9 +398,24 @@
         "type": "uint256"
       },
       {
+        "internalType": "address",
+        "name": "releaseAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "otherChainNonce",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "regsitryAddress",
+        "type": "address"
       }
     ],
     "name": "release",

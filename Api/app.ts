@@ -58,6 +58,8 @@ let RenJSProvider: RenJS;
 
 let astralUSDTBridgeEth: BridgeBase;
 let astralUSDTBridgeBsc: BridgeBase;
+let testNativeERC20Asset: TestNativeERC20Asset;
+let registry: TestNativeAssetRegistry;
 // let astralUSDTBridgeEth: BridgeBase
 
 app.use(express.json());
@@ -146,6 +148,16 @@ async function setup() {
     pBsc
   )) as BridgeBase;
 
+  testNativeERC20Asset = (await ethers.getContractAt(
+     "TestNativeERC20Asset",
+     testNativeAssetDeployments[BinanceSmartChain.chain]["USDT"]
+   )) as TestNativeERC20Asset;
+
+  registry = (await ethers.getContractAt(
+       "TestNativeAssetRegistry",
+       registries[BinanceSmartChain.chain]
+     )) as TestNativeAssetRegistry;
+
   //    await BridgeWorker(
   //     RenJSProvider,
   //     nativeUSDTContract,
@@ -220,6 +232,69 @@ setup().then(() => {
       const mintTransaction = await astralUSDTBridgeBsc
         .connect(signer)
         .mint(pHash, nHash, sigString, _value, _nonce, _from);
+      const mintTxReceipt = await mintTransaction.wait(1);
+
+      console.log(mintTxReceipt);
+    }
+  );
+
+  astralUSDTBridgeBsc.on(
+    "AssetBurnt",
+    async (_from, _value, timestamp, _nonce) => {
+      console.log(_from, _value, timestamp);
+      const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
+
+      const nHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint256"],
+          [_nonce, _value]
+        )
+      );
+      const pHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address"],
+          [_value, _from]
+        )
+      );
+
+      const hash = await astralUSDTBridgeEth.hashForSignature(
+        pHash,
+        _value,
+        _from,
+        nHash
+      );
+      const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
+
+      const publicKeyToAddress = pubToAddress(
+        ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
+      ).toString("hex");
+
+      const sigString = Ox(
+        `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
+      );
+
+      const veririedSignature = await astralUSDTBridgeBsc.verifySignature(
+        hash,
+        sigString
+      );
+
+      console.log(`verified signature: ${veririedSignature}`);
+      console.log(`sig string: ${sigString}`);
+      console.log(`public key to address: ${publicKeyToAddress}`);
+      console.log(`hash: ${hash}`);
+
+      const mintTransaction = await astralUSDTBridgeEth
+        .connect(signer)
+        .release(
+          pHash,
+          nHash,
+          sigString,
+          _value,
+          testNativeERC20Asset.address,
+          _from,
+          _nonce,
+          registry.address
+        );
       const mintTxReceipt = await mintTransaction.wait(1);
 
       console.log(mintTxReceipt);
