@@ -13,7 +13,7 @@ import { HardhatUserConfig, task } from "hardhat/config";
 
 require("dotenv").config();
 
-const config: HardhatUserConfig = {
+const config: any = {
   namedAccounts: {
     deployer: 0,
   },

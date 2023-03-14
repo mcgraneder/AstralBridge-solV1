@@ -23,7 +23,7 @@ import {
   TestNativeERC20Asset,
 } from "../typechain-types";
 import { ERC20ABI } from "@renproject/chains-ethereum/contracts";
-import { BigNumber as BN, utils, Wallet, Signer } from "ethers";
+import { BigNumber as BN, utils, Wallet, Signer, Contract } from 'ethers';
 import { AstralERC20Logic } from "../typechain-types/contracts/AstralABridge/AstralERC20Asset/AstralERC20.sol/AstralERC20Logic";
 import AstralERC20AssetABI from "../constants/ABIs/AstralERC20AssetABI.json";
 import BridgeAdapterABI from "../constants/ABIs/BridgeAdapterABI.json";
@@ -148,10 +148,16 @@ async function setup() {
     pBsc
   )) as BridgeBase;
 
-  testNativeERC20Asset = (await ethers.getContractAt(
-     "TestNativeERC20Asset",
-     testNativeAssetDeployments[BinanceSmartChain.chain]["USDT"]
-   )) as TestNativeERC20Asset;
+  // testNativeERC20Asset = (await ethers.getContractAt(
+  //    "TestNativeERC20Asset",
+  //    testNativeAssetDeployments[Ethereum.chain]["USDT"]
+  //  )) as TestNativeERC20Asset;
+
+     testNativeERC20Asset = (await new Contract(
+       testNativeAssetDeployments[Ethereum.chain]["USDT"],
+       ERC20ABI,
+       provider
+     )) as TestNativeERC20Asset;
 
   registry = (await ethers.getContractAt(
        "TestNativeAssetRegistry",
@@ -168,7 +174,7 @@ async function setup() {
   //   );
 }
 
-setup().then(() => {
+setup().then(async() => {
   const filter = {
     address: "0x1127fd0543D8e748F914D814084552516661a1EB",
     topics: [
@@ -176,6 +182,12 @@ setup().then(() => {
       utils.id("AssetLocked(address,uint256,uint256)"),
     ],
   };
+
+   const userNativeBalance = await testNativeERC20Asset.balanceOf(
+     "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+   );
+
+   console.log("aaaaaaaaaaaaa", Number(userNativeBalance))
 
   console.log(astralUSDTBridgeEth.address);
   const { provider, signer } = getChain(

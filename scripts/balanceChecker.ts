@@ -10,24 +10,25 @@ import {
 import { Ethereum, BinanceSmartChain } from '@renproject/chains-ethereum';
 
 let astralUSDT: AstralERC20Logic;
-let OWNER: SignerWithAddress;
 
 async function main(address: string) {
   // const signer = new Wallet(account.privateKey, provider);
-  [OWNER] = await ethers.getSigners();
+  const [OWNER, ALICE] = await ethers.getSigners();
 
   const testNativeERC20Asset = (await ethers.getContractAt(
     "TestNativeERC20Asset",
-    testNativeAssetDeployments[BinanceSmartChain.chain]["USDT"]
+    testNativeAssetDeployments[Ethereum.chain]["USDT"]
   )) as TestNativeERC20Asset;
+
+  console.log(testNativeERC20Asset.address)
 
   astralUSDT = (await ethers.getContractAt(
     "AstralERC20Logic",
-    BridgeAssets[BinanceSmartChain.chain]["aUSDT"].tokenAddress
+    BridgeAssets[Ethereum.chain]["aUSDT"].tokenAddress
   )) as AstralERC20Logic;
 
-  const userNativeBalance = await testNativeERC20Asset.balanceOf(address)
-  const userAstralBalance = await astralUSDT.balanceOf(address)
+  const userNativeBalance = await testNativeERC20Asset.balanceOf(ALICE.address)
+  const userAstralBalance = await astralUSDT.balanceOf(ALICE.address)
 
   console.log(`user ${await testNativeERC20Asset.symbol()} balanve: ${userNativeBalance}`);
   console.log(`user ${await testNativeERC20Asset.symbol()} balanve: ${userAstralBalance}`);
