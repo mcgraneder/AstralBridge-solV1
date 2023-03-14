@@ -15,6 +15,7 @@ import {AstralAssetVault} from "./AstralAssetValut.sol";
 contract AstralERC20Logic is ERC20, Ownable {
     using SafeMath for uint256;
 
+    address parentAsset;
     uint8 internal setDecimals;
     uint256 public constant _rateScale = 1e18;
     uint256 internal _rate;
@@ -28,13 +29,17 @@ contract AstralERC20Logic is ERC20, Ownable {
         string memory _symbol, 
         uint8 _decimals, 
         uint256 _chainId,
-        uint256 rate
+        uint256 rate,
+        address _parentAsset
     ) public ERC20(_name, _symbol){
+        //do more checks here to make sure source asset is legit
+        //address checks
         require(rate > 0, "rate must be greater than 0");
         chainId = _chainId;
         _rate = rate;
+        parentAsset = _parentAsset;
         if(_decimals != 0) setDecimals = _decimals;
-        else setDecimals = 18;
+        else setDecimals = _decmials;
 
         tokenVault = new AstralAssetVault();
     }

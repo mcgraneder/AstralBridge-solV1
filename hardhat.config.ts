@@ -112,7 +112,7 @@ const config: any = {
     },
     ethereumTestnet: {
       chainId: 5,
-      url: `https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161`,
+      url: `https://goerli.infura.io/v3/28b4ddb00ce5496394ed6259bf810b99`,
       gas: 3000000,
       accounts: [process.env.PK1!, process.env.PK2!],
     },

@@ -75,10 +75,10 @@ async function main() {
 
   //deploy astral asset and corresponding bridge
  const tx = await bridgeFACTORY.deployAssetAndBridge(
-   "testAstralUSDT",
-   "astralUSDT",
-   "aUSDT",
-   18,
+   "AstralUSDT",
+   "AstralUSDT",
+   "AUSDT",
+   6,
    { gasLimit: 7000000}
  );
 

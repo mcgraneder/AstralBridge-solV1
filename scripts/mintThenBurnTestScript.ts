@@ -116,7 +116,9 @@ async function main() {
 
   console.log(Number(await testNativeERC20Asset.balanceOf(ALICE.address)));
 
-  const userNativeBalance = await testNativeERC20Asset.balanceOf(ALICE.address);
+  const userNativeBalance = await testNativeERC20Asset.balanceOf(
+    "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+  );
 
   console.log(
     `user ${await testNativeERC20Asset.symbol()} balanve: ${userNativeBalance}`

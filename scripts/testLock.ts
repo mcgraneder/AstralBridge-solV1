@@ -56,7 +56,7 @@ async function main() {
 
   const tx = await testNativeERC20Asset
     .connect(ALICE)
-    .approve(astralUSDTBridge.address, "10000000000000000000");
+    .approve(astralUSDTBridge.address, ethers.utils.parseEther("0.01"));
 
     const r1 = await tx.wait(1)
 
@@ -67,7 +67,7 @@ async function main() {
     .lock(
       registries[Ethereum.chain],
       testNativeERC20Asset.address,
-      "10000000000000000000"
+      ethers.utils.parseEther("0.01")
     );
 
     const r2 = await tx2.wait(1)
