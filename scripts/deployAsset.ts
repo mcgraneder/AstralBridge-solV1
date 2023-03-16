@@ -8,7 +8,7 @@ import { TestNativeAssetRegistry } from "../typechain-types/contracts/AstralABri
 import { TestNativeAssetRegistry__factory } from "../typechain-types/factories/contracts/AstralABridge/tesNativeAssetRegistry.sol/TestNativeAssetRegistry__factory";
 import { TestNativeERC20Asset__factory } from "../typechain-types/factories/contracts/AstralABridge/TestNativeERC20Asset__factory";
 import { TestNativeERC20Asset } from "../typechain-types/contracts/AstralABridge/TestNativeERC20Asset";
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 let astralUSDT: AstralERC20Logic;
 let astralUSDTBridge: BridgeBase;
@@ -19,70 +19,39 @@ let OWNER_PRIVKEY: Buffer;
 let nativeAssetRegistry: TestNativeAssetRegistry;
 let testNativeERC20Asset: TestNativeERC20Asset;
 
- let ALICE: SignerWithAddress;
- let BOB: SignerWithAddress;
- let CHARLIE: SignerWithAddress;
+let ALICE: SignerWithAddress;
+let BOB: SignerWithAddress;
+let CHARLIE: SignerWithAddress;
 
- // Owner
- let OWNER: SignerWithAddress;
+// Owner
+let OWNER: SignerWithAddress;
 
 async function main() {
   // const signer = new Wallet(account.privateKey, provider);
   [OWNER, ALICE] = await ethers.getSigners();
 
-  console.log(ALICE.address);
-
-  // const TestNativeERC20Asset = (await ethers.getContractFactory(
-  //   "TestNativeERC20Asset"
-  // )) as TestNativeERC20Asset__factory;
-
-  // testNativeERC20Asset = (await TestNativeERC20Asset.connect(ALICE).deploy(
-  //   "USDT",
-  //   "USDT Tether",
-  //   18,
-  //   "100000000000000000000"
-  // )) as TestNativeERC20Asset;
-
-  // await testNativeERC20Asset.deployed();
-
-  // console.log(`deployed test USDT to address ${testNativeERC20Asset.address}`)
-
-  //deploy testNative asset registry
-  // const NativeAssetRegistry = (await ethers.getContractFactory(
-  //   "TestNativeAssetRegistry"
-  // )) as TestNativeAssetRegistry__factory;
-
-  // nativeAssetRegistry = (await NativeAssetRegistry.connect(OWNER).deploy([
-  //   "0x270203070650134837F3C33Fa7D97DC456eF624e", //USDT
-  // ])) as TestNativeAssetRegistry;
-
-  // await nativeAssetRegistry.deployed();
-
-  // console.log(
-  //   `deployed test native asset registry to ${nativeAssetRegistry.address}`
-  // );
-
   //deploy bridge factory
-  const BridgeFACTORY = (await ethers.getContractFactory(
-    "AstralBridgeFactory"
-  )) as AstralBridgeFactory__factory;
+  const bridgeFACTORY = (await ethers.getContractAt(
+    "AstralBridgeFactory",
+    "0xf592FDa7e26953407A850e6F353c4e6953e07d58"
+  )) as AstralBridgeFactory
 
-  const bridgeFACTORY = (await BridgeFACTORY.connect(OWNER).deploy(
-    OWNER.address
-  )) as AstralBridgeFactory;
+//   const bridgeFACTORY = (await BridgeFACTORY.connect(OWNER).deploy(
+//     OWNER.address
+//   )) as AstralBridgeFactory;
 
-  await bridgeFACTORY.deployed();
+//   await bridgeFACTORY.deployed();
 
   console.log(`bridge factory deployed to address ${bridgeFACTORY.address}\n`);
 
   //deploy astral asset and corresponding bridge
   const tx = await bridgeFACTORY.deployAssetAndBridge(
     "astralUSDT",
-    "AstralUSDT",
-    "aUSDT",
-    "0x270203070650134837F3C33Fa7D97DC456eF624e", //USSDT
-    6,
-    { gasLimit: 7000000 }
+    "USDT",
+    "AUSDT",
+    18,
+    // "0x270203070650134837F3C33Fa7D97DC456eF624e",
+    // { gasLimit: 7000000 }
   );
 
   await tx.wait(1);
@@ -103,12 +72,12 @@ async function main() {
   )) as BridgeBase;
 
   console.log(
-    `Sucessfully deployed token  to address ${
+    `Sucessfully deployed token ${await astralUSDT.name()} to address ${
       astralUSDT.address
     }, with bridge at address ${astralUSDTBridge.address}`
   );
   console.log(
-    `owner balance of  is ${Number(
+    `owner balance of ${await astralUSDT.symbol()} is ${Number(
       await astralUSDT.balanceOf(OWNER.address)
     )}`
   );
@@ -119,4 +88,4 @@ async function main() {
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
-})
+});

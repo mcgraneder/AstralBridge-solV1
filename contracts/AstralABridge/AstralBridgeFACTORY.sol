@@ -48,12 +48,13 @@ contract AstralBridgeFactory is Ownable {
         string calldata asset, 
         string calldata name, 
         string calldata symbol,
+        address parentAsset,
          uint8 decimals 
     ) public onlyOwner returns (address, address) {
         //check if asset exists
         address a = symbolToAstralAsset[symbol];
   
-        AstralERC20Logic token = _deployAstralAsset(block.chainid, asset, name, symbol, decimals);
+        AstralERC20Logic token = _deployAstralAsset(block.chainid, asset, name, symbol, decimals, parentAsset);
         address bridge = address( _deployAssetBridge(asset, symbol, signatureVerifier, address(token), block.chainid));
         token.transferOwnership(bridge);
         numAstralAssets+=1;
@@ -66,7 +67,8 @@ contract AstralBridgeFactory is Ownable {
         string calldata asset,
         string calldata name,
         string calldata symbol,
-        uint8 decimals
+        uint8 decimals,
+        address parentToken
     ) internal returns (AstralERC20Logic) {
         bytes memory encodedParameters = abi.encodeWithSignature(
             // chainId,
@@ -76,7 +78,7 @@ contract AstralBridgeFactory is Ownable {
         );
 
         // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
-        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, chainId, 300);
+        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, block.chainid, 300, parentToken);
         symbolToAstralAsset[symbol] = address(astralAsset);
         LinkedList.append(AstralAssetAddresses, address(astralAsset));
 

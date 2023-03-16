@@ -64,8 +64,8 @@ export const getEVMProvider = <EVM extends EthereumBaseChain>(
   )
     provider =
       overrideProvider ||
-      new providers.WebSocketProvider(
-        "wss://goerli.infura.io/ws/v3/28b4ddb00ce5496394ed6259bf810b99"
+      new providers.JsonRpcProvider(
+        "https://goerli.infura.io/v3/ac9d2c8a561a47739b23c52e6e7ec93f"
       );
   else provider = overrideProvider || new providers.JsonRpcProvider(rpcUrls[0]);
   let signer: EthSigner;

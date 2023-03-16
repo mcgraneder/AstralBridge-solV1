@@ -51,14 +51,14 @@ async function main() {
 
   astralUSDT = (await ethers.getContractAt(
     "AstralERC20Logic",
-    "0xEf8525d62713CB58638DB331553FCf7ed84F6B49"
+    BridgeAssets[BinanceSmartChain.chain]["aUSDT"].tokenAddress
   )) as AstralERC20Logic;
 
   console.log(Number(await astralUSDT.balanceOf(ALICE.address)));
 
   const tx2 = await astralUSDTBridge
     .connect(ALICE)
-    .burn(testNativeERC20Asset.address, ethers.utils.parseEther("1"));
+    .burn(testNativeERC20Asset.address, ethers.utils.parseUnits("0.001", "6"));
 
   const r2 = await tx2.wait(1);
 

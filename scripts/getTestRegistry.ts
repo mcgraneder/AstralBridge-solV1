@@ -1,10 +1,12 @@
 import { ethers } from "hardhat";
 import { TestNativeAssetRegistry } from "../typechain-types/contracts/utils/tesNativeAssetRegistry.sol/TestNativeAssetRegistry";
+import { registries } from '../constants/deployments';
+import { Ethereum } from '@renproject/chains-ethereum';
 
 async function main() {
   const registry = (await ethers.getContractAt(
     "TestNativeAssetRegistry",
-    "0x8402C2f910Df1C14E30A54469C2140FF1e20ec5d"
+    registries[Ethereum.chain]
   )) as TestNativeAssetRegistry;
 
   const assets = await registry.getAllNaitveERC20Asset();

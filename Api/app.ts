@@ -196,9 +196,16 @@ setup().then(async() => {
     RenNetwork.Testnet
   );
 
+   const { signer: signerEth } = getChain(
+     RenJSProvider,
+     EthereumChain.chain,
+     RenNetwork.Testnet
+   );
+
   astralUSDTBridgeEth.on(
     "AssetLocked",
     async (_from, _value, timestamp, _nonce) => {
+      // const _nonce = 63512828
       console.log(_from, _value, timestamp);
       const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
 
@@ -221,6 +228,7 @@ setup().then(async() => {
         _from,
         nHash
       );
+   
       const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
 
       const publicKeyToAddress = pubToAddress(
@@ -252,7 +260,8 @@ setup().then(async() => {
 
   astralUSDTBridgeBsc.on(
     "AssetBurnt",
-    async (_from, _value, timestamp, _nonce) => {
+    async (_from, _value, timestamp) => {
+      const _nonce = 232
       console.log(_from, _value, timestamp);
       const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
 
@@ -295,21 +304,23 @@ setup().then(async() => {
       console.log(`public key to address: ${publicKeyToAddress}`);
       console.log(`hash: ${hash}`);
 
+      console.log(_from)
       const mintTransaction = await astralUSDTBridgeEth
-        .connect(signer)
+        .connect(signerEth)
         .release(
           pHash,
           nHash,
-          sigString,
+          hash,
           _value,
           testNativeERC20Asset.address,
           _from,
           _nonce,
-          registry.address
+          registry.address,
+          { gasLimit: 7000000 }
         );
       const mintTxReceipt = await mintTransaction.wait(1);
 
-      console.log(mintTxReceipt);
+      console.log(mintTransaction);
     }
   );
 });

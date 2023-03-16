@@ -51,9 +51,10 @@ let astralUSDTBridgeEth: BridgeBase;
 let astralUSDTBridgeBsc: BridgeBase;
 let testNativeERC20Asset: TestNativeERC20Asset;
 let registry: TestNativeAssetRegistry;
+let registryEth: TestNativeAssetRegistry;
+
 let astralUSDTEth: AstralERC20Logic;
 let astralUSDTBsc: AstralERC20Logic;
-
 
 async function setup() {
   const network = RenNetwork.Testnet;
@@ -114,17 +115,22 @@ async function setup() {
     registries[BinanceSmartChain.chain]
   )) as TestNativeAssetRegistry;
 
-   astralUSDTEth = (await returnContract(
-     BridgeAssets[Ethereum.chain]["aUSDT"].tokenAddress,
-     AstralERC20AssetABI,
-     provider
-   )) as AstralERC20Logic;
+  registryEth = (await ethers.getContractAt(
+    "TestNativeAssetRegistry",
+    registries[Ethereum.chain]
+  )) as TestNativeAssetRegistry;
 
-      astralUSDTBsc = (await returnContract(
-        BridgeAssets[BinanceSmartChain.chain]["aUSDT"].tokenAddress,
-        AstralERC20AssetABI,
-        pBsc
-      )) as AstralERC20Logic;
+  astralUSDTEth = (await returnContract(
+    BridgeAssets[Ethereum.chain]["aUSDT"].tokenAddress,
+    AstralERC20AssetABI,
+    provider
+  )) as AstralERC20Logic;
+
+  astralUSDTBsc = (await returnContract(
+    BridgeAssets[BinanceSmartChain.chain]["aUSDT"].tokenAddress,
+    AstralERC20AssetABI,
+    pBsc
+  )) as AstralERC20Logic;
 
   //    await BridgeWorker(
   //     RenJSProvider,
@@ -137,135 +143,148 @@ async function setup() {
 }
 
 setup().then(async () => {
-      // console.log(await registry.getAllNaitveERC20Asset());
-      const { provider, signer } = getChain(
-        RenJSProvider,
-        Ethereum.chain,
-        RenNetwork.Testnet
-      );
+  // console.log(await registry.getAllNaitveERC20Asset());
+  const { provider, signer } = getChain(
+    RenJSProvider,
+    Ethereum.chain,
+    RenNetwork.Testnet
+  );
 
-      const { provider: pBsc, signer: sBsc } = getChain(
-        RenJSProvider,
-        BinanceSmartChain.chain,
-        RenNetwork.Testnet
-      );
-      const [OWNER, ALICE] = await ethers.getSigners()
-     const USDTBalBeforeMint = await testNativeERC20Asset.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+  const { provider: pBsc, signer: sBsc } = getChain(
+    RenJSProvider,
+    BinanceSmartChain.chain,
+    RenNetwork.Testnet
+  );
+  const [OWNER, ALICE] = await ethers.getSigners();
+  const USDTBalBeforeMint = await testNativeERC20Asset.balanceOf(
+    "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+  );
+  const aUSDTBalBeforeMint = await astralUSDTBsc.balanceOf(
+    "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+  );
+
+  console.log(
+    "starting bridge to mint and burn asset aUSDT on Binance from Etereum"
+  );
+  console.log(
+    `The users balance of USDT on Ethereum before Minting is ${ethers.utils.formatUnits(
+      USDTBalBeforeMint,
+      "6"
+    )}`
+  );
+  console.log(
+    `The users balance of aUSDT on Binance before Minting on Binance is ${ethers.utils.formatUnits(
+      aUSDTBalBeforeMint,
+      "6"
+    )}\n`
+  );
+
+  const ownerEthWal = new Wallet(process.env.PK1!, pBsc);
+  const ownerBscWal = new Wallet(process.env.PK1!, provider);
+
+  const aliceWalletEth = new Wallet(process.env.PK2!, provider);
+  const aliceWalletBsc = new Wallet(process.env.PK2!, pBsc);
+
+  const tx = await testNativeERC20Asset
+    .connect(aliceWalletEth)
+    .approve(astralUSDTBridgeEth.address, ethers.utils.parseUnits("1", "6"));
+  const r1 = await tx.wait(1);
+  console.log(`approved asset for bridging.`);
+  console.log(r1.transactionHash);
+
+  await astralUSDTBridgeEth
+    .connect(aliceWalletEth)
+    .lock(
+      registries[Ethereum.chain],
+      testNativeERC20Asset.address,
+      ethers.utils.parseUnits("1", "6")
     )
-    const aUSDTBalBeforeMint = await astralUSDTBsc.balanceOf(
-      "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
-    );
+    .then(async (lockTx) => {
+      console.log("USDT asset has been sucessfully locked on ethereum\n");
 
-    console.log("starting bridge to mint and burn asset aUSDT on Binance from Etereum")
+      const _from = "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149";
+      const _value = ethers.utils.parseUnits("1", "6");
+      const timestamp = "134252";
+      const _nonce = "6064512213";
+
+      const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
+      const nHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint256"],
+          [_nonce, _value]
+        )
+      );
+      const pHash = keccak256(
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address"],
+          [_value, _from]
+        )
+      );
+      const hash = await astralUSDTBridgeBsc.hashForSignature(
+        pHash,
+        _value,
+        _from,
+        nHash
+      );
+      const sig = ecsign(Buffer.from(hash.slice(2), "hex"), ADMIN_PRIVATE_KEY);
+      const publicKeyToAddress = pubToAddress(
+        ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
+      ).toString("hex");
+      const sigString = Ox(
+        `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(16)}`
+      );
+      const veririedSignature = await astralUSDTBridgeEth.verifySignature(
+        hash,
+        sigString
+      );
+
+      console.log(`verified signature: ${veririedSignature}`);
+      console.log(`sig string: ${sigString}`);
+      console.log(`public key to address: ${publicKeyToAddress}`);
+      console.log(`hash: ${hash}`);
+
+      const mintTransaction = await astralUSDTBridgeBsc
+        .connect(ownerEthWal)
+        .mint(pHash, nHash, sigString, _value, _nonce, _from);
+      const mintTxReceipt = await mintTransaction.wait(1);
+      console.log(mintTransaction);
+
+      const USDTBalAfterMint = await testNativeERC20Asset.balanceOf(
+        "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+      );
+      const aUSDTBalAfterMint = await astralUSDTBsc.balanceOf(
+        "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+      );
+
       console.log(
-        `The users balance of USDT on Ethereum before Minting is ${ethers.utils.formatEther(USDTBalBeforeMint)}`
-        
-      )
+        `\nThe users balance of USDT on Ethereum after Minting is ${ethers.utils.formatUnits(
+          USDTBalAfterMint,
+          "6"
+        )}`
+      );
       console.log(
-        `The users balance of aUSDT on Binance before Minting on Binance is ${ethers.utils.formatEther(
-          aUSDTBalBeforeMint
+        `The users balance of aUSDT on Binance after Minting on Binance is ${ethers.utils.formatUnits(
+          aUSDTBalAfterMint,
+          "6"
         )}\n`
       );
 
-      const ownerEthWal = new Wallet(process.env.PK1!, pBsc);
-      const ownerBscWal = new Wallet(process.env.PK1!, pBsc);
+      // console.log(`verified signature: ${veririedSignature}`);
+      // console.log(`sig string: ${sigString}`);
+      // console.log(`public key to address: ${publicKeyToAddress}`);
+      // console.log(`hash: ${hash}`);
 
-      const aliceWalletEth = new Wallet(process.env.PK2!, provider)
-      const aliceWalletBsc = new Wallet(process.env.PK2!, pBsc);
+      await astralUSDTBridgeBsc
+        .connect(aliceWalletBsc)
+        .burn(testNativeERC20Asset.address, ethers.utils.parseUnits("0.5", "6"))
+        .then(async (burnTx) => {
+          const _from = "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149";
+          const _value = ethers.utils.parseUnits("0.5", "6");
+          const timestamp = "134252";
+          const _nonce = "735311";
+          console.log(burnTx);
 
-      const tx = await testNativeERC20Asset
-        .connect(aliceWalletEth)
-        .approve(astralUSDTBridgeEth.address, ethers.utils.parseEther("3"));
-      const r1 = await tx.wait(1);
-      console.log(`approved asset for bridging.`);
-      console.log(r1.transactionHash)
-     
-      await astralUSDTBridgeEth
-        .connect(aliceWalletEth)
-        .lock(
-          registries[Ethereum.chain],
-          testNativeERC20Asset.address,
-          ethers.utils.parseEther("3")
-        ).then(async (lockTx) => {
-
-            console.log("USDT asset has been sucessfully locked on ethereum\n")
-
-         const _from = "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149";
-        const _value = ethers.utils.parseEther("3");
-        const timestamp = "134252";
-        const _nonce = "2015212";
-
-         
-          const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
-          const nHash = keccak256(
-            ethers.utils.defaultAbiCoder.encode(
-              ["uint256", "uint256"],
-              [_nonce, _value]
-            )
-          );
-          const pHash = keccak256(
-            ethers.utils.defaultAbiCoder.encode(
-              ["uint256", "address"],
-              [_value, _from]
-            )
-          );
-          const hash = await astralUSDTBridgeBsc.hashForSignature(
-            pHash,
-            _value,
-            _from,
-            nHash
-          );
-          const sig = ecsign(
-            Buffer.from(hash.slice(2), "hex"),
-            ADMIN_PRIVATE_KEY
-          );
-          const publicKeyToAddress = pubToAddress(
-            ecrecover(Buffer.from(hash.slice(2), "hex"), sig.v, sig.r, sig.s)
-          ).toString("hex");
-          const sigString = Ox(
-            `${sig.r.toString("hex")}${sig.s.toString("hex")}${sig.v.toString(
-              16
-            )}`
-          );
-          const veririedSignature = await astralUSDTBridgeEth.verifySignature(
-            hash,
-            sigString
-          );
-         
-          const mintTransaction = await astralUSDTBridgeBsc
-            .connect(ownerEthWal)
-            .mint(pHash, nHash, sigString, _value, _nonce, _from);
-          const mintTxReceipt = await mintTransaction.wait(1);
-          console.log(mintTransaction)
-
-          const USDTBalAfterMint = await testNativeERC20Asset.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
-          );
-          const aUSDTBalAfterMint = await astralUSDTBsc.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
-          );
-
-          console.log(
-            `\nThe users balance of USDT on Ethereum after Minting is ${ethers.utils.formatEther(
-              USDTBalAfterMint
-            )}`
-          );
-          console.log(
-            `The users balance of aUSDT on Binance after Minting on Binance is ${ethers.utils.formatEther(
-              aUSDTBalAfterMint
-            )}\n`
-          );
-          
-
-          const tx2 = await astralUSDTBridgeBsc
-            .connect(aliceWalletBsc)
-            .burn(testNativeERC20Asset.address, ethers.utils.parseEther("3"));
-          const r2 = await tx2.wait(1);
-
-          console.log(r2.transactionHash)
-
-          console.log(`\n asset has been sucessfully burned`)
+          console.log(`\n asset has been sucessfully burned`);
 
           const USDTBalBeforeBurn = await testNativeERC20Asset.balanceOf(
             "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
@@ -275,24 +294,21 @@ setup().then(async () => {
           );
 
           console.log(
-            `The users balance of USDT on Ethereum before Burning is ${ethers.utils.formatEther(
-              USDTBalBeforeBurn
+            `The users balance of USDT on Ethereum before Burning is ${ethers.utils.formatUnits(
+              USDTBalBeforeBurn,
+              "6"
             )}`
           );
           console.log(
-            `The users balance of aUSDT on Binance before Minting on Burning is ${ethers.utils.formatEther(
-              aUSDTBalBeforeBurn
+            `The users balance of aUSDT on Binance before Minting on Burning is ${ethers.utils.formatUnits(
+              aUSDTBalBeforeBurn,
+              "6"
             )}\n`
           );
-        
-
-        }
-      );
-      astralUSDTBridgeBsc.on(
-        "AssetBurnt",
-        async (_from, _value, timestamp, _nonce) => {
           console.log(_from, _value, timestamp);
-          console.log("releasing asset on the source chain to send back to the user\n")
+          console.log(
+            "releasing asset on the source chain to send back to the user\n"
+          );
           const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
           const nHash = keccak256(
             ethers.utils.defaultAbiCoder.encode(
@@ -328,12 +344,12 @@ setup().then(async () => {
             hash,
             sigString
           );
-        //   console.log(`verified signature: ${veririedSignature}`);
-        //   console.log(`sig string: ${sigString}`);
-        //   console.log(`public key to address: ${publicKeyToAddress}`);
-        //   console.log(`hash: ${hash}`);
+          //   console.log(`verified signature: ${veririedSignature}`);
+          //   console.log(`sig string: ${sigString}`);
+          //   console.log(`public key to address: ${publicKeyToAddress}`);
+          //   console.log(`hash: ${hash}`);
           const mintTransaction = await astralUSDTBridgeEth
-            .connect(OWNER)
+            .connect(ownerBscWal)
             .release(
               pHash,
               nHash,
@@ -342,12 +358,13 @@ setup().then(async () => {
               testNativeERC20Asset.address,
               _from,
               _nonce,
-              registry.address
+              registryEth.address
             );
           const mintTxReceipt = await mintTransaction.wait(1);
 
-          console.log(`\n${mintTransaction.hash}`)
-          
+          console.log(`\n${mintTxReceipt}`);
+          console.log(`\n${mintTransaction}`);
+
           const USDTBalAfterBurn = await testNativeERC20Asset.balanceOf(
             "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
           );
@@ -356,18 +373,20 @@ setup().then(async () => {
           );
 
           console.log(
-            `The users balance of USDT on Ethereum After Burning is ${ethers.utils.formatEther(
-              USDTBalAfterBurn
+            `The users balance of USDT on Ethereum After Burning is ${ethers.utils.formatUnits(
+              USDTBalAfterBurn,
+              "6"
             )}`
           );
           console.log(
-            `The users balance of aUSDT on Binance After Burning on Binance is ${ethers.utils.formatEther(
-              aUSDTBalAfterBurn
+            `The users balance of aUSDT on Binance After Burning on Binance is ${ethers.utils.formatUnits(
+              aUSDTBalAfterBurn,
+              "6"
             )}\n`
           );
 
-          console.log("asset sucessfully released")
-        }
-      );
+          console.log("asset sucessfully released");
+        });
+    });
 });
 

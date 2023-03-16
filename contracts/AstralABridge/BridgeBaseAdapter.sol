@@ -256,10 +256,33 @@ contract BridgeBase {
     }
 
     function verifySignature(bytes32 _sigHash, bytes memory _sig)
-    public
-    view
+		public
+		view
     returns (bool) {
        console.log("admin address", admin);
         return admin == ECDSA.recover(_sigHash, _sig);
     }
+
+    function getBalance(address user) public view returns (uint256) {
+      return lockBalance[user];
+    }
+
+    function checkNonce(uint256 _nonce, string memory _type) external view returns (bool) {
+      if (keccak256(bytes(_type)) == keccak256(bytes("Burn"))) {
+        return processedBurnNonces[_nonce];
+    	} else return processedLockNonces[_nonce];
+    }
+
+	//have registry address as global var
+	function doesReleaseAssetExist(address regsitryAddress, address _releaseAsset) external view returns (bool) {
+		TestNativeAssetRegistry registry = TestNativeAssetRegistry(regsitryAddress);
+    
+		address[] memory assetRegistry = registry.getAllNaitveERC20Asset();
+		bool doesAssetExist = false;
+		for(uint i = 0; i < assetRegistry.length; i++) {
+		if(assetRegistry[i] == _releaseAsset) doesAssetExist = true;
+		break;
+		}
+		return doesAssetExist;
+	}
 }

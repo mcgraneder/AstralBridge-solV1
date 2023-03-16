@@ -9,17 +9,17 @@ import {AstralAssetVault} from "./AstralAssetValut.sol";
 
 //to do set up UUPS pattern and acces coontrol with Roles
 
-///RenERC20 represents a digital asset that has been bridged on to
+///AstralRC20 represents a digital asset that has been bridged on to
 /// the Ethereum ledger. It exposes mint and burn functions that can only be
 /// called by it's associated Gateway contract.
 contract AstralERC20Logic is ERC20, Ownable {
     using SafeMath for uint256;
 
-    address parentAsset;
     uint8 internal setDecimals;
     uint256 public constant _rateScale = 1e18;
     uint256 internal _rate;
     uint256 public chainId;
+    address parentAsset;
     AstralAssetVault tokenVault;
 
     event LogRateChanged(uint256 indexed _rate);
@@ -32,16 +32,16 @@ contract AstralERC20Logic is ERC20, Ownable {
         uint256 rate,
         address _parentAsset
     ) public ERC20(_name, _symbol){
-        //do more checks here to make sure source asset is legit
+         //do more checks here to make sure source asset is legit
         //address checks
         require(rate > 0, "rate must be greater than 0");
         chainId = _chainId;
-        _rate = rate;
         parentAsset = _parentAsset;
+        _rate = rate;
         if(_decimals != 0) setDecimals = _decimals;
-        else setDecimals = _decmials;
+        else setDecimals = 18;
 
-        tokenVault = new AstralAssetVault();
+        // tokenVault = new AstralAssetVault();
     }
 
     function chain() public view returns (uint256) {

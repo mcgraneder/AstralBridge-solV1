@@ -102,6 +102,7 @@ describe("CatalogRen", function () {
       "testAstralUSDT",
       "astralUSDT",
       "aUSDT",
+      testNativeERC20Asset.address,
       18
     );
 
