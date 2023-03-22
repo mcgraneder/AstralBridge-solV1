@@ -60,6 +60,8 @@ let astralUSDTBridgeEth: BridgeBase;
 let astralUSDTBridgeBsc: BridgeBase;
 let testNativeERC20Asset: TestNativeERC20Asset;
 let registry: TestNativeAssetRegistry;
+let registryEth: TestNativeAssetRegistry;
+
 // let astralUSDTBridgeEth: BridgeBase
 
 app.use(express.json());
@@ -164,6 +166,11 @@ async function setup() {
        registries[BinanceSmartChain.chain]
      )) as TestNativeAssetRegistry;
 
+      registryEth = (await ethers.getContractAt(
+        "TestNativeAssetRegistry",
+        registries[Ethereum.chain]
+      )) as TestNativeAssetRegistry;
+
   //    await BridgeWorker(
   //     RenJSProvider,
   //     nativeUSDTContract,
@@ -184,7 +191,7 @@ setup().then(async() => {
   };
 
    const userNativeBalance = await testNativeERC20Asset.balanceOf(
-     "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+     "0x13480Ea818fE2F27b82DfE7DCAc3Fd3E63A94113"
    );
 
    console.log("aaaaaaaaaaaaa", Number(userNativeBalance))
@@ -204,8 +211,8 @@ setup().then(async() => {
 
   astralUSDTBridgeEth.on(
     "AssetLocked",
-    async (_from, _value, timestamp, _nonce) => {
-      // const _nonce = 63512828
+    async (_from, _value, timestamp) => {
+      const _nonce = 63512828635
       console.log(_from, _value, timestamp);
       const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
 
@@ -310,13 +317,12 @@ setup().then(async() => {
         .release(
           pHash,
           nHash,
-          hash,
+          sigString,
           _value,
           testNativeERC20Asset.address,
           _from,
           _nonce,
-          registry.address,
-          { gasLimit: 7000000 }
+          registryEth.address,
         );
       const mintTxReceipt = await mintTransaction.wait(1);
 

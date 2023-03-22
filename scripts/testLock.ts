@@ -56,23 +56,23 @@ async function main() {
 
   const tx = await testNativeERC20Asset
     .connect(ALICE)
-    .approve(astralUSDTBridge.address, ethers.utils.parseUnits("3", "6"));
+    .approve(astralUSDTBridge.address, "1");
 
     const r1 = await tx.wait(1)
 
     console.log(r1)
 
-  const tx2 = await astralUSDTBridge
-    .connect(ALICE)
-    .lock(
-      registries[Ethereum.chain],
-      testNativeERC20Asset.address,
-     ethers.utils.parseUnits("3", "6")
-    );
+  // const tx2 = await astralUSDTBridge
+  //   .connect(ALICE)
+  //   .lock(
+  //     registries[Ethereum.chain],
+  //     testNativeERC20Asset.address,
+  //    ethers.utils.parseUnits("1", "6")
+  //   );
 
-    const r2 = await tx2.wait(1)
+  //   const r2 = await tx2.wait(1)
 
-    console.log(r2)
+  //   console.log(r2)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

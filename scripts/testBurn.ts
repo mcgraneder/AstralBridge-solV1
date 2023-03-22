@@ -58,7 +58,7 @@ async function main() {
 
   const tx2 = await astralUSDTBridge
     .connect(ALICE)
-    .burn(testNativeERC20Asset.address, ethers.utils.parseUnits("0.001", "6"));
+    .burn(testNativeERC20Asset.address, ethers.utils.parseUnits("5", "6"));
 
   const r2 = await tx2.wait(1);
 

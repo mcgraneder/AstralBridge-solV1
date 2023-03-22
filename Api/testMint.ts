@@ -157,10 +157,10 @@ setup().then(async () => {
   );
   const [OWNER, ALICE] = await ethers.getSigners();
   const USDTBalBeforeMint = await testNativeERC20Asset.balanceOf(
-    "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+    "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
   );
   const aUSDTBalBeforeMint = await astralUSDTBsc.balanceOf(
-    "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+    "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
   );
 
   console.log(
@@ -179,11 +179,11 @@ setup().then(async () => {
     )}\n`
   );
 
-  const ownerEthWal = new Wallet(process.env.PK1!, pBsc);
-  const ownerBscWal = new Wallet(process.env.PK1!, provider);
+  const ownerEthWal = new Wallet(process.env.PK2!, pBsc);
+  const ownerBscWal = new Wallet(process.env.PK2!, provider);
 
-  const aliceWalletEth = new Wallet(process.env.PK2!, provider);
-  const aliceWalletBsc = new Wallet(process.env.PK2!, pBsc);
+  const aliceWalletEth = new Wallet(process.env.PK3!, provider);
+  const aliceWalletBsc = new Wallet(process.env.PK3!, pBsc);
 
   const tx = await testNativeERC20Asset
     .connect(aliceWalletEth)
@@ -202,10 +202,10 @@ setup().then(async () => {
     .then(async (lockTx) => {
       console.log("USDT asset has been sucessfully locked on ethereum\n");
 
-      const _from = "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149";
+      const _from = "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2";
       const _value = ethers.utils.parseUnits("1", "6");
       const timestamp = "134252";
-      const _nonce = "6064512213";
+      const _nonce = "6064512645533213015";
 
       const ADMIN_PRIVATE_KEY = Buffer.from(ADMIN_KEY, "hex");
       const nHash = keccak256(
@@ -250,10 +250,10 @@ setup().then(async () => {
       console.log(mintTransaction);
 
       const USDTBalAfterMint = await testNativeERC20Asset.balanceOf(
-        "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+        "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
       );
       const aUSDTBalAfterMint = await astralUSDTBsc.balanceOf(
-        "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+        "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
       );
 
       console.log(
@@ -278,19 +278,19 @@ setup().then(async () => {
         .connect(aliceWalletBsc)
         .burn(testNativeERC20Asset.address, ethers.utils.parseUnits("0.5", "6"))
         .then(async (burnTx) => {
-          const _from = "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149";
+          const _from = "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2";
           const _value = ethers.utils.parseUnits("0.5", "6");
           const timestamp = "134252";
-          const _nonce = "735311";
+          const _nonce = "73533533754110";
           console.log(burnTx);
 
           console.log(`\n asset has been sucessfully burned`);
 
           const USDTBalBeforeBurn = await testNativeERC20Asset.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+            "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
           );
           const aUSDTBalBeforeBurn = await astralUSDTBsc.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+            "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
           );
 
           console.log(
@@ -366,10 +366,10 @@ setup().then(async () => {
           console.log(`\n${mintTransaction}`);
 
           const USDTBalAfterBurn = await testNativeERC20Asset.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+            "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
           );
           const aUSDTBalAfterBurn = await astralUSDTBsc.balanceOf(
-            "0xD2E9ba02300EdfE3AfAe675f1c72446D5d4bD149"
+            "0xBFD95D83AF70f248389c5741bB8f9084ED11FDD2"
           );
 
           console.log(

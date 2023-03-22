@@ -54,8 +54,8 @@ const config: any = {
       gas: 3000000,
       url: "http://127.0.0.1:8545/",
       accounts: [
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
-      
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
       ],
     },
     local: {
@@ -104,7 +104,11 @@ const config: any = {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       gas: 3000000,
       chainId: 97,
-      accounts: [process.env.PK1!, process.env.PK2!],
+      accounts: [
+        process.env.PK1!,
+        process.env.PK2!,
+        "37ac0929515d3509d143ddcb5385698b894da9b8022b23b8333bb33eca2a5ec0",
+      ],
     },
     goerliTestnet: {
       chainId: 5,
@@ -117,7 +121,11 @@ const config: any = {
       chainId: 5,
       url: `https://goerli.infura.io/v3/28b4ddb00ce5496394ed6259bf810b99`,
       gas: 3000000,
-      accounts: [process.env.PK1!, process.env.PK2!],
+      accounts: [
+        process.env.PK1!,
+        process.env.PK2!,
+        // "37ac0929515d3509d143ddcb5385698b894da9b8022b23b8333bb33eca2a5ec0",
+      ],
     },
     optimisticKovan: {
       chainId: 420,
