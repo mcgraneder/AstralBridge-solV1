@@ -3,6 +3,11 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {StringsUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+
 import {AstralAssetVault} from "./AstralAssetValut.sol";
 //right now transfer and transfer from can be called by anyone
 //in futrue disable thi so that both can only be called by the assets gateway contract
@@ -12,7 +17,7 @@ import {AstralAssetVault} from "./AstralAssetValut.sol";
 ///AstralRC20 represents a digital asset that has been bridged on to
 /// the Ethereum ledger. It exposes mint and burn functions that can only be
 /// called by it's associated Gateway contract.
-contract AstralERC20Logic is ERC20, Ownable {
+contract AstralERC20Logic is Initializable, OwnableUpgradeable, ERC20Upgradeable {
     using SafeMath for uint256;
 
     uint8 internal setDecimals;
@@ -24,17 +29,21 @@ contract AstralERC20Logic is ERC20, Ownable {
 
     event LogRateChanged(uint256 indexed _rate);
 
-    constructor(
+    function initialize(
         string memory _name, 
         string memory _symbol, 
         uint8 _decimals, 
         uint256 _chainId,
         uint256 rate,
         address _parentAsset
-    ) public ERC20(_name, _symbol){
+    ) external initializer {
          //do more checks here to make sure source asset is legit
         //address checks
+         __Ownable_init();
+        __ERC20_init(_name, _symbol);
+    
         require(rate > 0, "rate must be greater than 0");
+
         chainId = _chainId;
         parentAsset = _parentAsset;
         _rate = rate;

@@ -2,6 +2,9 @@
 
 // solhint-disable-next-line
 pragma solidity ^0.8.0;
+
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AstralERC20Logic} from "./AstralERC20Asset/AstralERC20.sol";
 import {BridgeBase} from "./BridgeBaseAdapter.sol";
@@ -10,12 +13,23 @@ import {LinkedList} from "../utils/LinkedList.sol";
 import {BridgeBase} from "./BridgeBaseAdapter.sol";
 import {IBaseBridge} from "../interfaces/AstralBridge/IBaseBridge.sol";
 import {AstralAssetVault} from "./AstralERC20Asset/AstralAssetValut.sol";
+import {AstralAssetProxyBeacon, BridgeBaseAdapterProxyBeacon} from "./AstralProxyBeacon.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+
+
 import "hardhat/console.sol";
 
-contract AstralBridgeFactory is Ownable {
+contract AstralBridgeFactoryState {
+    AstralAssetProxyBeacon internal _astralAssetProxyBeacon;
+    BridgeBaseAdapterProxyBeacon internal _bridgeBaseAdapterProxyBeacon;
+}
+
+contract AstralBridgeFactory is Initializable, ContextUpgradeable, AstralBridgeFactoryState {
 
     address signatureVerifier;
-    uint8 numAstralAssets = 0;
+    uint8 numAstralAssets;
     LinkedList.List private AstralAssetAddresses;
     LinkedList.List private AstralAssetBridgeAddresses;
 
@@ -39,9 +53,17 @@ contract AstralBridgeFactory is Ownable {
     mapping(address => address) addressToAstralBridge;
     mapping(string => address) symbolToAstralBridge;
 
-    constructor(address _signatureVerifier) public {
+
+     function initialize(
+        address astralAssetProxyBeacon_,
+        address bridgeBaseAdapterProxyBeacon_,
+        address _signatureVerifier
+    ) public initializer {
+        __Context_init();
+        _astralAssetProxyBeacon = AstralAssetProxyBeacon(astralAssetProxyBeacon_);
+        _bridgeBaseAdapterProxyBeacon = BridgeBaseAdapterProxyBeacon(bridgeBaseAdapterProxyBeacon_);
         signatureVerifier = _signatureVerifier;
-       //will add sig and access control params later
+        numAstralAssets = 0;
     }
 
     function deployAssetAndBridge(
@@ -50,7 +72,7 @@ contract AstralBridgeFactory is Ownable {
         string calldata symbol,
         address parentAsset,
          uint8 decimals 
-    ) public onlyOwner returns (address, address) {
+    ) public returns (address, address) {
         //check if asset exists
         address a = symbolToAstralAsset[symbol];
   
@@ -70,17 +92,24 @@ contract AstralBridgeFactory is Ownable {
         uint8 decimals,
         address parentToken
     ) internal returns (AstralERC20Logic) {
+
         bytes memory encodedParameters = abi.encodeWithSignature(
-            // chainId,
-            name,
-            symbol,
-            decimals
+            "initialize(string,string,uint8,uint256,uint256,address)",
+            name, 
+            symbol, 
+            decimals, 
+            chainId,
+            300,
+            parentToken
         );
 
         // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
-        AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, block.chainid, 300, parentToken);
-        symbolToAstralAsset[symbol] = address(astralAsset);
-        LinkedList.append(AstralAssetAddresses, address(astralAsset));
+        address astralAsset = address(new BeaconProxy(address(_astralAssetProxyBeacon), ""));
+        Address.functionCall(address(astralAsset), encodedParameters);
+
+        // AstralERC20Logic astralAsset = new AstralERC20Logic(name, symbol, decimals, block.chainid, 300, parentToken);
+        symbolToAstralAsset[symbol] = astralAsset;
+        LinkedList.append(AstralAssetAddresses, astralAsset);
 
         emit AstralAssetDeployed(chainId, name, symbol, decimals, block.timestamp);
 
@@ -95,17 +124,17 @@ contract AstralBridgeFactory is Ownable {
         uint256 chainId
     ) internal returns (IBaseBridge) {
         bytes memory encodedParameters = abi.encodeWithSignature(
-            asset,
+            "initialize(address,address)",
             signatureVerifier,
             token
         );
 
         // bytes32 create2Salt = keccak256(abi.encodePacked(asset, version));
+        address assetBridge = address(new BeaconProxy(address(_bridgeBaseAdapterProxyBeacon), ""));
+        Address.functionCall(address(assetBridge), encodedParameters);
 
-        console.log("signature veridier in test", signatureVerifier);
-        BridgeBase assetBridge = new BridgeBase(signatureVerifier, token);
-        symbolToAstralBridge[symbol] = address(assetBridge);
-        addressToAstralBridge[token] = address(assetBridge);
+        symbolToAstralBridge[symbol] = assetBridge;
+        addressToAstralBridge[token] = assetBridge;
         LinkedList.append(AstralAssetBridgeAddresses, address(assetBridge));
 
         emit AstralAssetBridgeDeployed(chainId, asset, address(assetBridge), block.timestamp);
@@ -123,7 +152,7 @@ contract AstralBridgeFactory is Ownable {
     }
 
     function setAstralAsset(string memory symbol) public {
-        symbolToAstralAsset[symbol] = msg.sender;
+        symbolToAstralAsset[symbol] = _msgSender();
     }
     function getNumAssets() public view returns(uint8) {
         return numAstralAssets;
@@ -133,8 +162,16 @@ contract AstralBridgeFactory is Ownable {
         return symbolToAstralAsset[_symbol];
     }
 
-        function getBridgeBySymbol(string memory _symbol) public view returns (address) {
+    function getBridgeBySymbol(string memory _symbol) public view returns (address) {
         return symbolToAstralBridge[_symbol];
+    }
+
+    function getAstralAssetProxyBeacon() public view returns (AstralAssetProxyBeacon) {
+        return _astralAssetProxyBeacon;
+    }
+
+    function getAstralBridgeBaseAdapterProxyBeacon() public view returns (BridgeBaseAdapterProxyBeacon) {
+        return _bridgeBaseAdapterProxyBeacon;
     }
 
 }

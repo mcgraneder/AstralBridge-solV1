@@ -62,7 +62,19 @@ const config: any = {
       chainId: 31337,
       gas: 3000000,
       url: "http://0.0.0.0:8545",
-      accounts: [process.env.PK1!],
+      forking: {
+        url: "https://goerli.infura.io/v3/28b4ddb00ce5496394ed6259bf810b99",
+      },
+      // accounts: [process.env.PK1!],
+    },
+    local2: {
+      chainId: 31337,
+      gas: 3000000,
+      url: "http://0.0.0.0:8545",
+      forking: {
+        url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
+      },
+      // accounts: [process.env.PK1!],
     },
     catalogLocal: {
       chainId: 17,

@@ -36,7 +36,7 @@ async function main() {
       amountToMint
     )) as TestNativeERC20Asset;
 
-    await testNativeERC20Asset.deployTransaction.wait(6);
+    await testNativeERC20Asset.deployed();
 
     console.log(
       `deployed ${await testNativeERC20Asset.name()} to address ${
@@ -45,7 +45,7 @@ async function main() {
     );
      const deployerBalance = await testNativeERC20Asset.balanceOf(deployer.address);
 
-     console.log(`deployer balance: ${deployerBalance} ${testNativeERC20Asset.symbol()}`)
+     console.log(`deployer balance: ${deployerBalance} ${await testNativeERC20Asset.symbol()}`)
   });
 }
 

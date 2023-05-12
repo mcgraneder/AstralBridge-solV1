@@ -49,6 +49,7 @@ describe("CatalogRen", function () {
     [OWNER, ALICE, BOB, CHARLIE] = await ethers.getSigners();
     // const signer = new Wallet(account.privateKey, provider);
     const accounts = config?.network.config.accounts as any;
+    console.log(OWNER.address)
     // let mnemonicWallet = ethers.Wallet.fromMnemonic(
     //   "test test test test test test test test test test test junk"
     // );
